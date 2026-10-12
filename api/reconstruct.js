@@ -1,5 +1,5 @@
-import { createHash ) from "node:crypto";
-import { load ) from "cheerio";
+import { createHash } from "node:crypto";
+import { load } from "cheerio";
 import JSZip from "jszip";
 import { publicUrl } from "./_lib/urlSafety.js";
 import { fetchRemote } from "./_lib/fetchRemote.js";
