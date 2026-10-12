@@ -86,6 +86,69 @@ function normaliseAssets($, base) {
     }).join(", "));
   });
 }
+function textOf($, selector, limit = 120) {
+  return $(selector).map((_, el) => $(el).text().replace(/\\s+/g, " ").trim()).get().filter(Boolean).slice(0, limit);
+}
+function inspectPage($, page) {
+  const interactions = [];
+  const add = (type, el, selector, extra = {}) => {
+    const $el = $(el);
+    const label = ($el.attr("aria-label") || $el.attr("title") || $el.text() || $el.attr("alt") || "").replace(/\\s+/g, " ").trim().slice(0, 160);
+    interactions.push({
+      type, label, selector,
+      role: $el.attr("role") || null,
+      href: $el.attr("href") || null,
+      name: $el.attr("name") || null,
+      inputType: $el.attr("type") || null,
+      hasInlineHandler: Object.keys(el.attribs || {}).some(k => /^on(?:click|change|submit|input|keydown|keyup|pointer)/i.test(k)),
+      dataAttributes: Object.keys(el.attribs || {}).filter(k => k.startsWith("data-")).slice(0, 8),
+      ...extra
+    });
+  };
+  $("a[href]").each((_, el) => add("link", el, "a"));
+  $("button, input[type=button], input[type=submit], input[type=reset]").each((_, el) => add("button", el, el.name || "button"));
+  $("input, select, textarea").each((_, el) => {
+    const $el = $(el);
+    if (/^(?:button|submit|reset|image)$/i.test($el.attr("type") || "")) return;
+    add("form-control", el, el.name || el.tagName.toLowerCase(), {
+      required: $el.is("[required]"),
+      placeholder: ($el.attr("placeholder") || "").slice(0, 100),
+      autocomplete: $el.attr("autocomplete") || null
+    });
+  });
+  $("[role=button],[role=tab],[role=menuitem],[role=dialog],[role=switch],[role=checkbox],[role=radio],[role=combobox],[tabindex]").each((_, el) => {
+    if (interactions.length < 260) add("aria-interaction", el, el.name || el.tagName.toLowerCase());
+  });
+  const cssText = $("style").map((_, el) => $(el).text()).get().join("\\n");
+  const styleAttributes = $("[style]").length;
+  const headings = {};
+  for (let level = 1; level <= 6; level++) headings["h" + level] = $("h" + level).length;
+  const forms = $("form").map((_, el) => ({
+    action: $(el).attr("action") || null,
+    method: ($(el).attr("method") || "get").toLowerCase(),
+    controls: $(el).find("input,select,textarea,button").length,
+    hasFileInput: $(el).find('input[type="file"]').length > 0,
+    hasPasswordInput: $(el).find('input[type="password"]').length > 0
+  })).get().slice(0, 40);
+  const navLabels = textOf($, "nav a, [role=navigation] a, header a", 80);
+  const colors = [...new Set((cssText.match(/(?:^|[;{\\s])(?:color|background(?:-color)?|border-color)\\s*:\\s*(#[0-9a-f]{3,8}|rgba?\\([^)]{1,80}\\)|hsla?\\([^)]{1,80}\\)|[a-z]{3,20})/gi) || []).map(x => x.replace(/^.*?:\\s*/, "").trim()).slice(0, 24)];
+  const fontFamilies = [...new Set([...cssText.matchAll(/font-family\\s*:\\s*([^;}]{1,120})/gi)].map(m => m[1].trim()))].slice(0, 12);
+  const cssVariables = [...new Set([...cssText.matchAll(/(--[a-z0-9_-]+)\\s*:/gi)].map(m => m[1]))].slice(0, 80);
+  const images = $("img").map((_, el) => ({ src: $(el).attr("src") || $(el).attr("data-src") || null, alt: ($(el).attr("alt") || "").slice(0, 180), hasAlt: Boolean($(el).attr("alt")) })).get().slice(0, 120);
+  const scripts = $("script[src]").map((_, el) => $(el).attr("src")).get().slice(0, 80);
+  return {
+    headings, title: page.title, description: page.description,
+    structure: { navs: $("nav,[role=navigation]").length, headers: $("header").length, footers: $("footer").length, mainLandmarks: $("main,[role=main]").length, sections: $("section").length, articles: $("article").length, divs: $("div").length, lists: $("ul,ol").length, tables: $("table").length },
+    counts: { links: $("a[href]").length, buttons: $("button,input[type=button],input[type=submit],input[type=reset]").length, forms: $("form").length, formControls: $("input,select,textarea").length, images: $("img").length, videos: $("video").length, iframes: $("iframe").length, inlineStyleBlocks: $("style").length, inlineStyledElements: styleAttributes, externalScripts: scripts.length },
+    navigationLabels: navLabels,
+    forms,
+    interactions: interactions.slice(0, 260),
+    images,
+    scripts,
+    visualSignals: { colors, fontFamilies, cssVariables, hasDarkColorSignals: /(?:#(?:0[0-9a-f]{5}|1[0-9a-f]{5}|2[0-9a-f]{5})|rgb\\(\\s*[0-4]?\\d\\s*,\\s*[0-4]?\\d\\s*,\\s*[0-4]?\\d)/i.test(cssText), hasResponsiveRules: /@media/i.test(cssText), hasAnimationRules: /@keyframes|animation\\s*:/i.test(cssText) }
+  };
+}
+
 function pageResources($, page) {
   normaliseAssets($, page.url);
   const found = [];
@@ -169,7 +232,7 @@ export default async function handler(req, res) {
         const language = $("html").attr("lang") || "en";
         const inlineCss = $("style").map((_, el) => $(el).html() || "").get().join("\n\n");
         const route = new URL(finalUrl).pathname.replace(/\/+$/, "") || "/";
-        const page = { route, url: finalUrl, title, description, language, html: "", inlineCss, stylesheets: [], resources: [] };
+        const page = { route, url: finalUrl, title, description, language, html: "", inlineCss, stylesheets: [], resources: [] };\n        page.inspection = inspectPage($, page);
         page.resources = pageResources($, { url: finalUrl, inlineCss });
         const body = $("body").length ? $("body") : $.root();
         body.find("script,noscript,iframe,object,embed,portal,base").remove();
@@ -245,7 +308,7 @@ export default async function handler(req, res) {
     const report = {
       version: 2, source: start.href, createdAt: new Date().toISOString(),
       summary: { pagesCaptured: pages.length, pageLimit: PAGE_LIMIT, htmlBytes, resourcesDiscovered: queued.size, resourcesDownloaded: downloaded.size, resourceBytes, resourceLimit: RESOURCE_LIMIT, resourceBytesLimit: RESOURCE_TOTAL_LIMIT, failedPages: failedPages.length, failedResources: failedResources.length },
-      pages: pages.map(p => ({ route: p.route, title: p.title, url: p.url, resources: p.resources.map(r => ({ url: r.url, kind: r.kind, downloaded: localPaths.has(r.url), localPath: localPaths.get(r.url) || null })) })),
+      pages: pages.map(p => ({ route: p.route, title: p.title, url: p.url, inspection: p.inspection, resources: p.resources.map(r => ({ url: r.url, kind: r.kind, downloaded: localPaths.has(r.url), localPath: localPaths.get(r.url) || null })) })),\n      interactionAnalysis: { totalLinks: pages.reduce((n, p) => n + p.inspection.counts.links, 0), totalButtons: pages.reduce((n, p) => n + p.inspection.counts.buttons, 0), totalForms: pages.reduce((n, p) => n + p.inspection.counts.forms, 0), totalFormControls: pages.reduce((n, p) => n + p.inspection.counts.formControls, 0), pagesWithForms: pages.filter(p => p.inspection.counts.forms > 0).map(p => p.route), pagesWithVideo: pages.filter(p => p.inspection.counts.videos > 0).map(p => p.route), pagesWithIframe: pages.filter(p => p.inspection.counts.iframes > 0).map(p => p.route) },
       downloadedResources: [...downloaded.values()].map(({ url, finalUrl, kind, contentType, bytes, exportPath }) => ({ url, finalUrl, kind, contentType, bytes, path: exportPath })),
       failedPages, failedResources,
       limitations: [
@@ -265,7 +328,7 @@ export default async function handler(req, res) {
     zip.file("src/App.jsx", 'import { useEffect, useMemo, useState } from "react";\nimport { pages } from "./pages.js";\nfunction currentPath(){try{return decodeURI(window.location.pathname).replace(/\\/+$/, "")||"/"}catch{return window.location.pathname||"/"}}\nexport default function App(){\n const [path,setPath]=useState(currentPath);\n const page=useMemo(()=>pages.find(p=>p.route===path)||pages.find(p=>p.route==="/")||pages[0],[path]);\n useEffect(()=>{const pop=()=>setPath(currentPath());const click=e=>{const a=e.target.closest("a[href]");if(!a||e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||a.target||a.hasAttribute("download"))return;try{const u=new URL(a.href,location.href),route=u.pathname.replace(/\\/+$/, "")||"/";if(u.origin!==location.origin||!pages.some(p=>p.route===route))return;e.preventDefault();history.pushState({},"",u.pathname+u.search+u.hash);setPath(currentPath());scrollTo(0,0)}catch{}};addEventListener("popstate",pop);document.addEventListener("click",click);return()=>{removeEventListener("popstate",pop);document.removeEventListener("click",click)}},[]);\n useEffect(()=>{document.title=page?.title||"Reconstructed website";document.documentElement.lang=page?.language||"en";document.querySelectorAll("[data-reconstruction-css]").forEach(n=>n.remove());page?.stylesheets?.forEach(href=>{const l=document.createElement("link");l.rel="stylesheet";l.href=href;l.dataset.reconstructionCss="true";document.head.appendChild(l)});return()=>document.querySelectorAll("[data-reconstruction-css]").forEach(n=>n.remove())},[page]);\n return page?<><style>{page.inlineCss||""}</style><div className="reconstructed-page" dangerouslySetInnerHTML={{__html:page.html}}/></>:<h1>Page not found</h1>;\n}\n');
     zip.file("src/styles.css", "*{box-sizing:border-box}html{min-height:100%;scroll-behavior:smooth}body{margin:0;min-width:320px}img,video,iframe{max-width:100%}.reconstructed-page{min-height:100vh}.reconstructed-page img{height:auto}.reconstructed-page a{cursor:pointer}");
     zip.file("freecode-reconstruction-report.json", JSON.stringify(report, null, 2));
-    zip.file("README.md", "# FreeCode reconstructed website\n\nGenerated from publicly accessible website resources.\n\n## Run\n\n1. Install Node.js.\n2. Run npm install.\n3. Run npm run dev.\n\n## Included\n\n- Captured page HTML and route metadata\n- Downloaded public stylesheets, images, fonts, icons, and media where accessible\n- Public JavaScript files saved separately under original-resources/ for inspection; they are not executed by this reconstruction\n- freecode-reconstruction-report.json with route/resource inventory and failures\n\n## Limitations\n\nThis is a best-effort reconstruction, not a recovery of private source code or backend services. Review the report for inaccessible resources and routes that need manual rebuilding.");
+    zip.file("README.md", "# FreeCode reconstructed website\n\nGenerated from publicly accessible website resources.\n\n## Run\n\n1. Install Node.js.\n2. Run npm install.\n3. Run npm run dev.\n\n## Included\n\n- Captured page HTML and route metadata\n- Downloaded public stylesheets, images, fonts, icons, and media where accessible\n- Public JavaScript files saved separately under original-resources/ for inspection; they are not executed by this reconstruction\n- freecode-reconstruction-report.json with route/resource inventory, page structure, visual signals, forms, buttons, navigation and interaction clues, and failures\n\n## Limitations\n\nThis is a best-effort reconstruction, not a recovery of private source code or backend services. Review the report for inaccessible resources and routes that need manual rebuilding.");
     const archive = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", 'attachment; filename="' + host.replace(/[^a-z0-9.-]/gi, "-") + '-freecode-reconstruction.zip"');
