@@ -367,3 +367,6 @@ html,body{background:#070b0a;color:var(--text)}
 :focus-visible{outline-color:#a2f4c5!important}
 @media(max-width:760px){.topbar{padding:0 14px}.home-feature-grid{grid-template-columns:1fr}.home-feature-card{min-height:0;padding:23px}.site-footer{margin-top:55px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Keep the glass sheen behind interactive card content. */
+.home-feature-card:before,.home-feature-card:after{z-index:0}.home-feature-card>*{position:relative;z-index:1}.home-feature-card:hover{isolation:isolate}
