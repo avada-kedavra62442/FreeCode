@@ -15,7 +15,7 @@ function HomePage() {
       <div className="hero-eyebrow"><Sparkles size={14} /> FREE WEBSITE CODE TOOLS</div>
       <h1>Your next build starts<br /><span>with understanding the code.</span></h1>
       <p className="home-hero-copy">Inspect a live website, explore its accessible front-end files, or grab the complete tracked source of a public GitHub project. A practical toolkit for curious developers — free, with no nonsense.</p>
-      <div className="home-hero-actions"><a className="home-primary-cta" href="/workspace">Open the workspace <ArrowRight size={17} /></a><a className="home-secondary-cta" href="#how-it-works">See how it works</a></div>
+      <div className="home-hero-actions"><a className="home-primary-cta" href="/traditional">Open the workspace <ArrowRight size={17} /></a><a className="home-secondary-cta" href="#how-it-works">See how it works</a></div>
       <div className="home-trust-row"><span><ShieldCheck size={15} /> Free to use</span><span><Code2 size={15} /> Editable output</span><span><LockKeyhole size={15} /> Isolated preview</span></div>
       <div className="hero-code-window" aria-label="Decorative code preview">
         <div className="hero-code-top"><div className="hero-window-dots"><i /><i /><i /></div><span><Braces size={13} /> project-start.jsx</span><span className="hero-code-badge">SOURCE READY</span></div>
@@ -27,13 +27,13 @@ function HomePage() {
     <section className="home-section home-intro" id="features">
       <div className="section-heading"><span>ONE WORKSPACE, THREE STARTING POINTS</span><h2>Start from the site.<br />Or start from the source.</h2><p>Analyze a live site, reconstruct its pages, or start from the original public repository.</p></div>
       <div className="home-feature-grid">
-        <article className="home-feature-card"><div className="home-feature-icon"><Globe2 size={21} /></div><span className="home-card-label">01 / LIVE WEBSITE</span><h3>Explore what the browser can reach</h3><p>Analyze a public URL to inspect returned HTML, collect accessible CSS and assets, edit the extracted markup, and preview your changes safely.</p><ul><li><Check size={14} /> HTML and stylesheet extraction</li><li><Check size={14} /> Public linked asset collection</li><li><Check size={14} /> Editable code and live preview</li></ul><a href="/workspace">Analyze a website <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card"><div className="home-feature-icon"><Sparkles size={21} /></div><span className="home-card-label">02 / RECONSTRUCTION</span><h3>Rebuild the website you can see</h3><p>Explore linked routes, inspect page structure and public styles, then export a fresh React project built to preserve visual similarity.</p><ul><li><Check size={14} /> Route and sitemap discovery</li><li><Check size={14} /> Editable React project ZIP</li><li><Check size={14} /> Crawl report and limitations</li></ul><a href="/workspace#reconstruct">Reconstruct a website <ArrowRight size={15} /></a></article><article className="home-feature-card home-feature-highlight"><div className="home-feature-icon"><Github size={21} /></div><span className="home-card-label">02 / SOURCE REPOSITORY</span><h3>Get the real project files</h3><p>Use a public GitHub repository when you need the actual source tree — application code, API functions, configuration, and project folders.</p><ul><li><Check size={14} /> Full tracked repository archive</li><li><Check size={14} /> Source folders beyond <code>public</code></li><li><Check size={14} /> Preserved folder structure</li></ul><a href="/workspace#repository">Import a GitHub project <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card"><div className="home-feature-icon"><FileCode2 size={21} /></div><span className="home-card-label">04 / HTML INSPECTOR</span><h3>Understand the page structure</h3><p>Inspect the HTML a public page actually serves and explore its accessible markup without pretending to recover private source files.</p><ul><li><Check size={14} /> Returned HTML markup</li><li><Check size={14} /> Page title and metadata</li><li><Check size={14} /> Browser-readable structure</li></ul><a href="/workspace">Inspect HTML <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card"><div className="home-feature-icon"><Braces size={21} /></div><span className="home-card-label">05 / CSS EXPLORER</span><h3>See the styling behind the page</h3><p>Collect accessible linked stylesheets and inline styles to understand how a public page is presented.</p><ul><li><Check size={14} /> Linked CSS discovery</li><li><Check size={14} /> Inline style inspection</li><li><Check size={14} /> Original public style references</li></ul><a href="/workspace">Explore styles <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card"><div className="home-feature-icon"><FolderTree size={21} /></div><span className="home-card-label">06 / ASSET COLLECTOR</span><h3>Gather public page assets</h3><p>Find browser-accessible images and linked resources associated with a public website or its source repository.</p><ul><li><Check size={14} /> Public asset references</li><li><Check size={14} /> Organized source archive</li><li><Check size={14} /> Preserved folder structure</li></ul><a href="/workspace">Collect assets <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card"><div className="home-feature-icon"><EyeIcon size={21} /></div><span className="home-card-label">07 / LIVE PREVIEW</span><h3>Inspect and refine your output</h3><p>Use the existing workspace to inspect editable output and preview supported changes before exporting.</p><ul><li><Check size={14} /> Workspace-based inspection</li><li><Check size={14} /> Editable markup</li><li><Check size={14} /> Isolated preview workflow</li></ul><a href="/workspace">Open the preview workspace <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card"><div className="home-feature-icon"><ShieldCheck size={21} /></div><span className="home-card-label">08 / SOURCE EXPORT</span><h3>Take the project with you</h3><p>Export gathered public resources or a public repository as a ZIP, with a clear distinction between captured output and original source.</p><ul><li><Check size={14} /> Downloadable ZIP output</li><li><Check size={14} /> Clear coverage report</li><li><Check size={14} /> No paid API requirement</li></ul><a href="/workspace">Export a project <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><Globe2 size={21} /></div><span className="home-card-label">01 / LIVE WEBSITE</span><h3>Explore what the browser can reach</h3><p>Analyze a public URL to inspect returned HTML, collect accessible CSS and assets, edit the extracted markup, and preview your changes safely.</p><ul><li><Check size={14} /> HTML and stylesheet extraction</li><li><Check size={14} /> Public linked asset collection</li><li><Check size={14} /> Editable code and live preview</li></ul><a href="/traditional">Analyze a website <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><Sparkles size={21} /></div><span className="home-card-label">02 / RECONSTRUCTION</span><h3>Rebuild the website you can see</h3><p>Explore linked routes, inspect page structure and public styles, then export a fresh React project built to preserve visual similarity.</p><ul><li><Check size={14} /> Route and sitemap discovery</li><li><Check size={14} /> Editable React project ZIP</li><li><Check size={14} /> Crawl report and limitations</li></ul><a href="/reconstruct">Reconstruct a website <ArrowRight size={15} /></a></article><article className="home-feature-card home-feature-highlight"><div className="home-feature-icon"><Github size={21} /></div><span className="home-card-label">02 / SOURCE REPOSITORY</span><h3>Get the real project files</h3><p>Use a public GitHub repository when you need the actual source tree — application code, API functions, configuration, and project folders.</p><ul><li><Check size={14} /> Full tracked repository archive</li><li><Check size={14} /> Source folders beyond <code>public</code></li><li><Check size={14} /> Preserved folder structure</li></ul><a href="/github">Import a GitHub project <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><FileCode2 size={21} /></div><span className="home-card-label">04 / HTML INSPECTOR</span><h3>Understand the page structure</h3><p>Inspect the HTML a public page actually serves and explore its accessible markup without pretending to recover private source files.</p><ul><li><Check size={14} /> Returned HTML markup</li><li><Check size={14} /> Page title and metadata</li><li><Check size={14} /> Browser-readable structure</li></ul><a href="/traditional">Inspect HTML <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><Braces size={21} /></div><span className="home-card-label">05 / CSS EXPLORER</span><h3>See the styling behind the page</h3><p>Collect accessible linked stylesheets and inline styles to understand how a public page is presented.</p><ul><li><Check size={14} /> Linked CSS discovery</li><li><Check size={14} /> Inline style inspection</li><li><Check size={14} /> Original public style references</li></ul><a href="/traditional">Explore styles <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><FolderTree size={21} /></div><span className="home-card-label">06 / ASSET COLLECTOR</span><h3>Gather public page assets</h3><p>Find browser-accessible images and linked resources associated with a public website or its source repository.</p><ul><li><Check size={14} /> Public asset references</li><li><Check size={14} /> Organized source archive</li><li><Check size={14} /> Preserved folder structure</li></ul><a href="/traditional">Collect assets <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><EyeIcon size={21} /></div><span className="home-card-label">07 / LIVE PREVIEW</span><h3>Inspect and refine your output</h3><p>Use the existing workspace to inspect editable output and preview supported changes before exporting.</p><ul><li><Check size={14} /> Workspace-based inspection</li><li><Check size={14} /> Editable markup</li><li><Check size={14} /> Isolated preview workflow</li></ul><a href="/traditional">Open the preview workspace <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><ShieldCheck size={21} /></div><span className="home-card-label">08 / SOURCE EXPORT</span><h3>Take the project with you</h3><p>Export gathered public resources or a public repository as a ZIP, with a clear distinction between captured output and original source.</p><ul><li><Check size={14} /> Downloadable ZIP output</li><li><Check size={14} /> Clear coverage report</li><li><Check size={14} /> No paid API requirement</li></ul><a href="/traditional">Export a project <ArrowRight size={15} /></a></article>
       </div>
       <div className="home-honesty-note"><ShieldCheck size={17} /><p><strong>A quick but important distinction:</strong> a deployed website does not reveal its private server code or original development files. For the full project, use the source repository or files you own and have permission to access.</p></div>
     </section>
@@ -48,7 +48,7 @@ function HomePage() {
     </section>
 
     <section className="home-banner">
-      <div className="home-banner-icon"><Zap size={23} /></div><div><span>YOUR NEXT STEP</span><h2>Explore a website. Reconstruct its pages. Start building.</h2><p>No mandatory paid AI APIs. Start with public pages and export an editable React project.</p></div><a href="/workspace">Go to workspace <ArrowRight size={16} /></a>
+      <div className="home-banner-icon"><Zap size={23} /></div><div><span>YOUR NEXT STEP</span><h2>Explore a website. Reconstruct its pages. Start building.</h2><p>No mandatory paid AI APIs. Start with public pages and export an editable React project.</p></div><a href="/traditional">Go to workspace <ArrowRight size={16} /></a>
     </section>
     <section className="home-section home-faq" id="faq">
       <div className="section-heading"><span>GOOD TO KNOW</span><h2>What FreeCode can — and cannot — retrieve.</h2><p>Clear expectations make for a better workflow.</p></div>
@@ -62,33 +62,37 @@ function HomePage() {
   </>;
 }
 
-function WorkspacePage() {
+function ToolPage({ mode }) {
   const workspace = useWebsiteWorkspace();
-  return <>
-    <section className="workspace-route-hero">
-      <div className="hero-eyebrow"><Sparkles size={14} /> FREECODE WORKSPACE</div>
-      <h1>Bring your source.<br /><span>Let's get to the code.</span></h1>
-      <p>Analyze a public website for accessible front-end code, or download the full tracked file tree from a public GitHub repository.</p>
-      <div className="hero-trust"><span><ShieldCheck size={14} /> No paid APIs</span><span><Code2 size={14} /> Source-first options</span><span><FolderTree size={14} /> Organized files</span></div>
-    </section>
-    <div className="workspace-route-content">
-      <ReconstructionPanel />
-      <div className="workspace-divider"><span>OR IMPORT A PUBLIC GITHUB REPOSITORY</span></div>
-      <RepoImportPanel />
-      <div className="workspace-divider"><span>OR ANALYZE A LIVE WEBSITE</span></div>
-      <UrlAnalyzerForm url={workspace.url} setUrl={workspace.setUrl} analyze={workspace.analyze} busy={workspace.busy} error={workspace.error} />
-      {workspace.hasGenerated && workspace.page && <WorkspacePanel {...workspace} />}
+  const config = {
+    traditional: { eyebrow: "TRADITIONAL EXTRACTION", title: <>Read the page.<br /><span>Collect its public files.</span></>, copy: "Fetch the original HTML response, discover public CSS and assets, edit the accessible markup, preview safely, and export the files.", component: <><UrlAnalyzerForm url={workspace.url} setUrl={workspace.setUrl} analyze={workspace.analyze} busy={workspace.busy} error={workspace.error} />{workspace.hasGenerated && workspace.page && <WorkspacePanel {...workspace} />}</> },
+    github: { eyebrow: "GITHUB REPOSITORY METHOD", title: <>Get the source.<br /><span>Keep the real folder tree.</span></>, copy: "Download the tracked files from a public GitHub repository. This is the best option when you need the original project rather than a reconstruction.", component: <RepoImportPanel /> },
+    reconstruct: { eyebrow: "WEBSITE RECONSTRUCTION", title: <>Study the website.<br /><span>Build a new project.</span></>, copy: "Discover accessible routes, capture public resources, inspect interface clues, and export a new React project with an honest coverage report.", component: <ReconstructionPanel /> }
+  }[mode];
+  return <section className="tool-page">
+    <div className="workspace-route-hero">
+      <div className="hero-eyebrow"><Sparkles size={14} /> {config.eyebrow}</div>
+      <h1>{config.title}</h1>
+      <p>{config.copy}</p>
+      <div className="hero-trust"><span><ShieldCheck size={14} /> Free to use</span><span><Code2 size={14} /> Editable output</span><span><FolderTree size={14} /> Public sources only</span></div>
     </div>
-    <HowItWorks />
-  </>;
+    <div className="workspace-route-content">{config.component}</div>
+    <div className="tool-switcher" aria-label="Choose another method">
+      <a href="/traditional" className={mode === "traditional" ? "active" : ""}><Globe2 size={16}/> Traditional extraction</a>
+      <a href="/github" className={mode === "github" ? "active" : ""}><Github size={16}/> GitHub repository</a>
+      <a href="/reconstruct" className={mode === "reconstruct" ? "active" : ""}><Sparkles size={16}/> Reconstruction</a>
+    </div>
+  </section>;
 }
 
 export default function App() {
-  const isWorkspace = window.location.pathname.replace(/\/+$/, "") === "/workspace";
+  const path = window.location.pathname.replace(/\\/+$/, "") || "/";
+  const mode = path === "/github" ? "github" : path === "/reconstruct" ? "reconstruct" : "traditional";
+  const isTool = ["/traditional", "/github", "/reconstruct", "/workspace"].includes(path);
   return <div className="app-shell">
     <div className="ambient ambient-one" /><div className="ambient ambient-two" />
-    <AppHeader isWorkspace={isWorkspace} />
-    <main>{isWorkspace ? <WorkspacePage /> : <HomePage />}</main>
+    <AppHeader isWorkspace={isTool} />
+    <main>{isTool ? <ToolPage mode={mode} /> : <HomePage />}</main>
     <AppFooter />
   </div>;
 }
