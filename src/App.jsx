@@ -52,6 +52,7 @@ export default function App() {
   const [css, setCss] = useState("");
   const [codeOverrides, setCodeOverrides] = useState({});
   const [busy, setBusy] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
@@ -69,7 +70,6 @@ export default function App() {
 
   function selectFormat(format) {
     setActiveFormat(format);
-    setCode("");
     setCopied(false);
   }
 
@@ -110,6 +110,36 @@ export default function App() {
       setError(caught.message || "Something went wrong while analyzing this website.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function downloadAllFiles() {
+    if (!page?.url || zipBusy) return;
+    setZipBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: page.url })
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || "The website files could not be packaged.");
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = (new URL(page.url).hostname.replace(/[^a-z0-9.-]/gi, "-") || "website") + "-freecode.zip";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    } catch (caught) {
+      setError(caught.message || "Could not download the website ZIP.");
+    } finally {
+      setZipBusy(false);
     }
   }
 
@@ -163,7 +193,7 @@ export default function App() {
         <section className="hero" id="workspace">
           <div className="hero-eyebrow"><Sparkles size={14} /> THE WEBSITE-TO-CODE WORKSPACE</div>
           <h1>See a website.<br /><span>Build its starting point.</span></h1>
-          <p className="hero-copy">Paste a public URL. FreeCode extracts accessible markup and styles, then gives you editable code, a live preview, and a clean place to start building.</p>
+          <p className="hero-copy">Enter a public website URL. FreeCode extracts editable code and can bundle accessible pages and assets into a ZIP so you can inspect the site files.</p>
           <div className="hero-trust">
             <span><ShieldCheck size={14} /> No paid APIs</span>
             <span><Code2 size={14} /> Editable output</span>
@@ -176,7 +206,7 @@ export default function App() {
             <div className="url-card-icon"><Globe2 size={19} /></div>
             <div>
               <h2>Start with a website URL</h2>
-              <p>Works best with public pages that don't require a login.</p>
+              <p>Enter a domain with or without https://. Works best with public websites.</p>
             </div>
             <span className="step-label">01 <span>/</span> INPUT</span>
           </div>
@@ -184,10 +214,11 @@ export default function App() {
             <div className="url-input-wrap">
               <Globe2 size={18} />
               <input
-                type="url"
+                type="text"
+                inputMode="url"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
-                placeholder="https://example.com"
+                placeholder="example.com or https://example.com"
                 aria-label="Website URL"
                 autoComplete="url"
               />
@@ -219,6 +250,9 @@ export default function App() {
               <div className="workspace-actions">
                 <button className="subtle-button" type="button" onClick={() => setShowPreview(!showPreview)}><PanelRight size={15} /> {showPreview ? "Hide preview" : "Show preview"}</button>
                 <button className="subtle-button" type="button" onClick={analyzeWebsite}><RefreshCw size={15} /> Re-analyze</button>
+                <button className="download-button zip-download-button" type="button" onClick={downloadAllFiles} disabled={zipBusy}>
+                  {zipBusy ? <><LoaderCircle className="spin" size={15} /> Building ZIP…</> : <><ArrowDownToLine size={15} /> Download all files (.ZIP)</>}
+                </button>
               </div>
             </div>
             <div className="stats-row">
@@ -268,7 +302,7 @@ export default function App() {
                 </div>
               )}
             </div>
-            <div className="workspace-note"><ShieldCheck size={15} /><p><strong>A useful starting point, not a perfect clone.</strong> Protected pages, JavaScript-rendered content, dynamic interactions, and some assets may not be captured. Review the generated code before using it.</p></div>
+            <div className="workspace-note"><ShieldCheck size={15} /><p><strong>A useful starting point, not a perfect clone.</strong> The ZIP collects publicly accessible pages and linked assets within safety and size limits. Login-protected files, server-side source code, and runtime-generated assets cannot be guaranteed.</p></div>
           </section>
         )}
 
@@ -277,7 +311,7 @@ export default function App() {
           <div className="process-grid">
             <article className="process-card"><span className="process-number">01</span><div className="process-icon"><Globe2 size={20} /></div><h3>Enter a public URL</h3><p>Give FreeCode a website address. It requests the page and checks which markup and styles are accessible.</p></article>
             <article className="process-card"><span className="process-number">02</span><div className="process-icon"><Code2 size={20} /></div><h3>Inspect and edit</h3><p>Switch between output views, edit the extracted code, and see supported changes in the preview.</p></article>
-            <article className="process-card"><span className="process-number">03</span><div className="process-icon"><ArrowDownToLine size={20} /></div><h3>Export your starting point</h3><p>Copy or download the code and continue building in your own project.</p></article>
+            <article className="process-card"><span className="process-number">03</span><div className="process-icon"><ArrowDownToLine size={20} /></div><h3>Download the site bundle</h3><p>Export the extracted code or package accessible website files into a ZIP to inspect and continue building.</p></article>
           </div>
         </section>
       </main>
