@@ -7,7 +7,7 @@ import { fetchRemote } from "./_lib/fetchRemote.js";
 
 const MAX_FILES = 80;
 const MAX_FILE_BYTES = 2_500_000;
-const MAX_TOTAL_BYTES = 12_000_000;
+const MAX_TOTAL_BYTES = 3_600_000;
 const TIMEOUT_MS = 9000;
 
 export default async function handler(req, res) {
@@ -201,6 +201,9 @@ export default async function handler(req, res) {
     );
 
     const archive = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 5 } });
+    if (archive.byteLength > 4_300_000) {
+      throw new Error("This site bundle is too large for the free serverless download limit. Try a smaller page or a lighter website.");
+    }
     const filename = rootHost.replace(/[^a-z0-9.-]/gi, "-") + "-website.zip";
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", 'attachment; filename="' + filename + '"');
