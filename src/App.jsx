@@ -50,7 +50,7 @@ export default function App() {
   const [page, setPage] = useState(null);
   const [markup, setMarkup] = useState("");
   const [css, setCss] = useState("");
-  const [code, setCode] = useState("");
+  const [codeOverrides, setCodeOverrides] = useState({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -58,11 +58,12 @@ export default function App() {
   const [hasGenerated, setHasGenerated] = useState(false);
 
   const output = useMemo(() => {
+    if ((activeFormat === "react" || activeFormat === "tailwind") && codeOverrides[activeFormat] !== undefined) return codeOverrides[activeFormat];
     if (activeFormat === "css") return css || "/* No CSS was extracted from this page. */";
     if (activeFormat === "react") return makeReactOutput(markup, page?.title);
     if (activeFormat === "tailwind") return makeTailwindOutput(markup);
     return prettyMarkup(markup);
-  }, [activeFormat, css, markup, page]);
+  }, [activeFormat, codeOverrides, css, markup, page]);
 
   const previewDocument = useMemo(() => buildDocument(markup, css), [markup, css]);
 
@@ -91,6 +92,7 @@ export default function App() {
     setError("");
     setPage(null);
     setHasGenerated(false);
+    setCodeOverrides({});
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -249,7 +251,7 @@ export default function App() {
                   onChange={(event) => {
                     if (activeFormat === "css") setCss(event.target.value);
                     else if (activeFormat === "html") setMarkup(event.target.value);
-                    else setCode(event.target.value);
+                    else setCodeOverrides((previous) => ({ ...previous, [activeFormat]: event.target.value }));
                   }}
                 />
                 <div className="editor-footer"><span><span className="status-dot" /> Changes stay in this workspace</span><span>{output.length.toLocaleString()} characters</span></div>
