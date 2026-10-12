@@ -179,7 +179,7 @@ export default async function handler(req, res) {
             if (n.startsWith("on") || n === "srcdoc" || (["href", "src", "action", "formaction"].includes(n) && /^\s*javascript:/i.test(value || ""))) $(el).removeAttr(name);
           }
         });
-        normaliseAssets(body, finalUrl);
+        normaliseAssets($, finalUrl);
         page.html = body.html() || "";
         page.stylesheets = page.resources.filter(r => r.kind === "stylesheet").map(r => r.url);
         pages.push(page);
