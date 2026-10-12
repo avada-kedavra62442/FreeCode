@@ -288,6 +288,24 @@ export default async function handler(req, res) {
       r.exportPath = r.kind === "script" ? "original-resources/" + r.path.split("/").pop() : r.path;
       zip.file(r.exportPath, r.buffer);
     }
+    for (const page of pages) {
+      const linkedCss = page.stylesheets.map(url => downloaded.get(url)).filter(resource => resource && (resource.kind === "stylesheet" || /text\/css/i.test(resource.contentType))).map(resource => resource.buffer.toString("utf8")).join("\n");
+      const combinedCss = [page.inlineCss, linkedCss].filter(Boolean).join("\n");
+      const colorDeclarations = [...new Set([...combinedCss.matchAll(/(?:^|[;{\s])(?:color|background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|hsla?\([^)]{1,80}\)|[a-z]{3,20})/gi)].map(match => match[1])).slice(0, 32);
+      const fontFamilies = [...new Set([...combinedCss.matchAll(/font-family\s*:\s*([^;}]{1,120})/gi)].map(match => match[1].trim()))].slice(0, 16);
+      const cssVariables = [...new Set([...combinedCss.matchAll(/(--[a-z0-9_-]+)\s*:/gi)].map(match => match[1]))].slice(0, 100);
+      page.inspection.stylesheetAnalysis = {
+        downloadedStylesheets: page.stylesheets.filter(url => downloaded.has(url)).length,
+        cssBytesAnalyzed: Buffer.byteLength(combinedCss),
+        colorDeclarations,
+        fontFamilies,
+        cssVariables,
+        hasResponsiveRules: /@media/i.test(combinedCss),
+        hasAnimationRules: /@keyframes|animation\s*:/i.test(combinedCss),
+        hasDarkColorSignals: /(?:#(?:0[0-9a-f]{5}|1[0-9a-f]{5}|2[0-9a-f]{5})|rgb\(\s*[0-4]?\d\s*,\s*[0-4]?\d\s*,\s*[0-4]?\d)/i.test(combinedCss)
+      };
+    }
+
     const projectPages = pages.map(page => {
       const $ = load("<div>" + page.html + "</div>", { decodeEntities: false });
       rewriteHtml($, page.url, localPaths);
