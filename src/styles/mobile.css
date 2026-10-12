@@ -1,0 +1,28 @@
+/* Responsive layout and install UI. Main visual system remains in ../styles.css. */
+.topbar { padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+.install-app-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; padding:0 11px; border:1px solid rgba(69,229,154,.25); border-radius:10px; color:#c8f5dc; background:rgba(69,229,154,.08); font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; }
+.install-app-button:hover { border-color:rgba(69,229,154,.55); background:rgba(69,229,154,.13); }
+.install-help-backdrop { position:fixed; inset:0; z-index:100; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.72); backdrop-filter:blur(10px); }
+.install-help { position:relative; width:min(100%,390px); padding:28px; border:1px solid rgba(169,210,187,.22); border-radius:20px; background:#0d1a13; box-shadow:0 24px 80px rgba(0,0,0,.45); }
+.install-help-close { position:absolute; top:13px; right:13px; display:grid; place-items:center; width:32px; height:32px; border:1px solid var(--line); border-radius:9px; background:transparent; cursor:pointer; }
+.install-help-icon { display:grid; place-items:center; width:46px; height:46px; border:1px solid rgba(69,229,154,.24); border-radius:14px; color:var(--green); background:rgba(69,229,154,.08); }
+.install-help h2 { margin:17px 0 10px; font-size:20px; }
+.install-help ol { padding-left:20px; color:#c0d0c6; line-height:1.8; font-size:13px; }
+.install-help p { color:#8fa397; font-size:11px; line-height:1.7; }
+.export-report { display:flex; flex-direction:column; gap:5px; margin:14px 0; padding:13px 15px; border:1px solid rgba(69,229,154,.2); border-radius:12px; background:rgba(69,229,154,.055); color:#b8d2c2; font-size:11px; }
+.export-report strong { color:#d9f8e5; font-size:12px; }
+.export-report p { margin:4px 0 0; color:#e5c5a0; line-height:1.6; }
+@media (max-width:760px) {
+  .topbar { height:auto; min-height:68px; flex-wrap:wrap; gap:10px; padding-top:12px; padding-bottom:12px; }
+  .brand { min-width:0; } .topbar-right { min-width:0; margin-left:auto; gap:8px; }
+  .top-nav { order:3; width:100%; justify-content:center; gap:24px; padding:6px 0 2px; }
+  .hero { padding-top:50px; } .hero h1 { letter-spacing:-1.8px; }
+  main { padding-left:16px; padding-right:16px; } .url-card { padding:18px; } .step-label { display:none; }
+  .url-form { flex-direction:column; } .url-form > * { width:100%; }
+  .workspace-heading { align-items:flex-start; flex-direction:column; }
+  .workspace-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; }
+  .zip-download-button { grid-column:1 / -1; } .editor-layout { grid-template-columns:minmax(0,1fr); }
+  .code-editor { min-height:300px; } .footer { padding-left:18px; padding-right:18px; flex-wrap:wrap; gap:12px; }
+  .footer-right { width:100%; justify-content:flex-start; }
+}
+@media (max-width:390px) { .free-pill { display:none; } .install-app-button { padding:0 8px; } .install-app-button span { display:none; } .format-tabs { gap:2px; } .format-tab { padding-left:8px; padding-right:8px; } }
