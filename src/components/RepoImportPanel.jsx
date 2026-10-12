@@ -22,7 +22,7 @@ export default function RepoImportPanel() {
     window.setTimeout(() => setBusy(false), 1500);
   }
 
-  return <section className="repo-import-card" aria-labelledby="repo-import-title">
+  return <section className="repo-import-card" id="repository" aria-labelledby="repo-import-title">
     <div className="repo-import-icon"><Github size={20} /></div>
     <div className="repo-import-copy">
       <span className="repo-kicker">FULL SOURCE PROJECT</span>
