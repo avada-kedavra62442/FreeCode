@@ -5,6 +5,7 @@ import HowItWorks from "./components/HowItWorks.jsx";
 import UrlAnalyzerForm from "./components/UrlAnalyzerForm.jsx";
 import WorkspacePanel from "./components/WorkspacePanel.jsx";
 import RepoImportPanel from "./components/RepoImportPanel.jsx";
+import ReconstructionPanel from "./components/ReconstructionPanel.jsx";
 import { useWebsiteWorkspace } from "./hooks/useWebsiteWorkspace.js";
 
 function HomePage() {
@@ -24,10 +25,10 @@ function HomePage() {
     </section>
 
     <section className="home-section home-intro" id="features">
-      <div className="section-heading"><span>ONE WORKSPACE, TWO STARTING POINTS</span><h2>Start from the site.<br />Or start from the source.</h2><p>Choose the workflow that matches what you actually have.</p></div>
+      <div className="section-heading"><span>ONE WORKSPACE, THREE STARTING POINTS</span><h2>Start from the site.<br />Or start from the source.</h2><p>Analyze a live site, reconstruct its pages, or start from the original public repository.</p></div>
       <div className="home-feature-grid">
         <article className="home-feature-card"><div className="home-feature-icon"><Globe2 size={21} /></div><span className="home-card-label">01 / LIVE WEBSITE</span><h3>Explore what the browser can reach</h3><p>Analyze a public URL to inspect returned HTML, collect accessible CSS and assets, edit the extracted markup, and preview your changes safely.</p><ul><li><Check size={14} /> HTML and stylesheet extraction</li><li><Check size={14} /> Public linked asset collection</li><li><Check size={14} /> Editable code and live preview</li></ul><a href="/workspace">Analyze a website <ArrowRight size={15} /></a></article>
-        <article className="home-feature-card home-feature-highlight"><div className="home-feature-icon"><Github size={21} /></div><span className="home-card-label">02 / SOURCE REPOSITORY</span><h3>Get the real project files</h3><p>Use a public GitHub repository when you need the actual source tree — application code, API functions, configuration, and project folders.</p><ul><li><Check size={14} /> Full tracked repository archive</li><li><Check size={14} /> Source folders beyond <code>public</code></li><li><Check size={14} /> Preserved folder structure</li></ul><a href="/workspace#repository">Import a GitHub project <ArrowRight size={15} /></a></article>
+        <article className="home-feature-card"><div className="home-feature-icon"><Sparkles size={21} /></div><span className="home-card-label">02 / RECONSTRUCTION</span><h3>Rebuild the website you can see</h3><p>Explore linked routes, inspect page structure and public styles, then export a fresh React project built to preserve visual similarity.</p><ul><li><Check size={14} /> Route and sitemap discovery</li><li><Check size={14} /> Editable React project ZIP</li><li><Check size={14} /> Crawl report and limitations</li></ul><a href="/workspace#reconstruct">Reconstruct a website <ArrowRight size={15} /></a></article><article className="home-feature-card home-feature-highlight"><div className="home-feature-icon"><Github size={21} /></div><span className="home-card-label">02 / SOURCE REPOSITORY</span><h3>Get the real project files</h3><p>Use a public GitHub repository when you need the actual source tree — application code, API functions, configuration, and project folders.</p><ul><li><Check size={14} /> Full tracked repository archive</li><li><Check size={14} /> Source folders beyond <code>public</code></li><li><Check size={14} /> Preserved folder structure</li></ul><a href="/workspace#repository">Import a GitHub project <ArrowRight size={15} /></a></article>
       </div>
       <div className="home-honesty-note"><ShieldCheck size={17} /><p><strong>A quick but important distinction:</strong> a deployed website does not reveal its private server code or original development files. For the full project, use the source repository or files you own and have permission to access.</p></div>
     </section>
@@ -42,13 +43,13 @@ function HomePage() {
     </section>
 
     <section className="home-banner">
-      <div className="home-banner-icon"><Zap size={23} /></div><div><span>YOUR NEXT STEP</span><h2>Bring a URL. Bring a repository. Get moving.</h2><p>No paid APIs or feature walls. Just useful tools for exploring the web and its code.</p></div><a href="/workspace">Go to workspace <ArrowRight size={16} /></a>
+      <div className="home-banner-icon"><Zap size={23} /></div><div><span>YOUR NEXT STEP</span><h2>Explore a website. Reconstruct its pages. Start building.</h2><p>No mandatory paid AI APIs. Start with public pages and export an editable React project.</p></div><a href="/workspace">Go to workspace <ArrowRight size={16} /></a>
     </section>
     <section className="home-section home-faq" id="faq">
       <div className="section-heading"><span>GOOD TO KNOW</span><h2>What FreeCode can — and cannot — retrieve.</h2><p>Clear expectations make for a better workflow.</p></div>
       <div className="faq-grid">
-        <article><h3>Can I get every file from a live URL?</h3><p>No website can expose files it never sends to the browser. The live analyzer is best-effort and gathers accessible resources within safety and size limits.</p></article>
-        <article><h3>How do I get original source files?</h3><p>Use the public GitHub repository import in the workspace, or work from a source archive you already have permission to use.</p></article>
+        <article><h3>Can FreeCode recreate the exact original website?</h3><p>It can get closer by discovering pages and reusing accessible styles and assets, but private backend code, scripts, login-only pages, and complex interactions cannot be guaranteed from a public URL.</p></article>
+        <article><h3>What does reconstruction export?</h3><p>A new React project with discovered routes, captured page markup, inline styles, references to public stylesheets and assets, and a report describing coverage and limitations.</p></article>
         <article><h3>Does a repository archive include everything?</h3><p>It includes the repository's tracked files at its default branch, not Git history, private secrets, generated dependencies, or untracked local files.</p></article>
         <article><h3>Is FreeCode free?</h3><p>Yes. FreeCode is designed to be a useful, free-first tool without paid feature walls. Public website access and hosting limits still apply.</p></article>
       </div>
@@ -66,6 +67,8 @@ function WorkspacePage() {
       <div className="hero-trust"><span><ShieldCheck size={14} /> No paid APIs</span><span><Code2 size={14} /> Source-first options</span><span><FolderTree size={14} /> Organized files</span></div>
     </section>
     <div className="workspace-route-content">
+      <ReconstructionPanel />
+      <div className="workspace-divider"><span>OR IMPORT A PUBLIC GITHUB REPOSITORY</span></div>
       <RepoImportPanel />
       <div className="workspace-divider"><span>OR ANALYZE A LIVE WEBSITE</span></div>
       <UrlAnalyzerForm url={workspace.url} setUrl={workspace.setUrl} analyze={workspace.analyze} busy={workspace.busy} error={workspace.error} />
