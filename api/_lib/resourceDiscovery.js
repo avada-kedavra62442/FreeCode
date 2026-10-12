@@ -4,7 +4,7 @@ function isPage(url) {
   return !/\.(?:css|js|mjs|cjs|json|xml|txt|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|pdf|zip|mp4|webm|mp3|wav|map)(?:$|\?)/i.test(url.pathname);
 }
 
-function addUrl(queue, value, base, type, rootHost) {
+export function addUrl(queue, value, base, type, rootHost) {
   try {
     const next = new URL(value, base);
     if (!["http:", "https:"].includes(next.protocol)) return;
