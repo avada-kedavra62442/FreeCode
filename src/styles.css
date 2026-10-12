@@ -600,3 +600,13 @@ html,body{background:#050807!important}
 .source-research-note { margin-top:22px; padding:20px 22px; border:1px solid var(--line); border-radius:14px; background:rgba(13,23,20,.62); }
 .source-research-note strong { color:#d8fff0; font-size:13px; }
 .source-research-note p { color:var(--muted); font-size:12px; line-height:1.8; margin:10px 0 0; }
+
+@media (max-width: 640px) {
+  .top-nav { gap: 9px !important; }
+  .top-nav a { font-size: 9px !important; }
+  .top-nav a:first-child, .top-nav a:nth-child(5) { display: none; }
+  .brand { gap: 6px; }
+  .brand-word { font-size: 16px; }
+  .brand-beta, .free-pill { display: none !important; }
+  .header-home-link { white-space: nowrap; }
+}
