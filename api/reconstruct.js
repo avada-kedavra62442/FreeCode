@@ -336,8 +336,12 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", 'attachment; filename="' + host.replace(/[^a-z0-9.-]/gi, "-") + '-freecode-reconstruction.zip"');
     res.setHeader("X-FreeCode-Pages", String(pages.length));
-    res.setHeader("X-FreeCode-Resources", String(downloaded.size));
-    res.setHeader("X-FreeCode-Resource-Failures", String(failedResources.length));
+    res.setHeader("X-FreeCode-Stylesheets", String([...downloaded.values()].filter(r => r.kind === "stylesheet").length));
+    res.setHeader("X-FreeCode-Assets", String(downloaded.size));
+    res.setHeader("X-FreeCode-Failures", String(failedPages.length + failedResources.length));
+    res.setHeader("X-FreeCode-Links", String(report.interactionAnalysis.totalLinks));
+    res.setHeader("X-FreeCode-Buttons", String(report.interactionAnalysis.totalButtons));
+    res.setHeader("X-FreeCode-Forms", String(report.interactionAnalysis.totalForms));
     return res.status(200).send(archive);
   } catch (error) {
     return res.status(502).json({ error: controller.signal.aborted ? "The website took too long to explore. Try a smaller site." : (error?.message || "FreeCode could not reconstruct this website.") });
