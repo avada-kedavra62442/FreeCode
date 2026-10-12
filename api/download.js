@@ -5,7 +5,7 @@ import net from "node:net";
 import path from "node:path";
 
 const MAX_FILES = 80;
-const MAX_FILE_BYTES = 1_200_000;
+const MAX_FILE_BYTES = 2_500_000;
 const MAX_TOTAL_BYTES = 12_000_000;
 const TIMEOUT_MS = 9000;
 
@@ -202,7 +202,19 @@ export default async function handler(req, res) {
         const finalUrl = fetched.url;
         const key = finalUrl.href;
         if (downloaded.has(key)) continue;
-        const filePath = zipPath(finalUrl, rootHost);
+        let filePath = zipPath(finalUrl, rootHost);
+        // Keep the main document and source files recognizable in the archive.
+        if (item.type === "page" && (finalUrl.pathname === "/" || finalUrl.pathname === "")) {
+          filePath = finalUrl.hostname.toLowerCase() === rootHost.toLowerCase()
+            ? "index.html"
+            : "_external/" + finalUrl.hostname.replace(/[^a-z0-9.-]/gi, "_") + "/index.html";
+        } else if (/javascript|ecmascript/.test(fetched.contentType) && /\.html?$/i.test(filePath)) {
+          filePath = filePath.replace(/\.html?$/i, ".js");
+        } else if (fetched.contentType.includes("text/css") && /\.html?$/i.test(filePath)) {
+          filePath = filePath.replace(/\.html?$/i, ".css");
+        } else if (fetched.contentType.includes("text/html") && !/\.html?$/i.test(filePath)) {
+          filePath += ".html";
+        }
         downloaded.set(key, { url: finalUrl.href, path: filePath, buffer: fetched.buffer, contentType: fetched.contentType, type: item.type });
 
         const contentType = fetched.contentType;
