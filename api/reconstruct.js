@@ -87,13 +87,13 @@ function normaliseAssets($, base) {
   });
 }
 function textOf($, selector, limit = 120) {
-  return $(selector).map((_, el) => $(el).text().replace(/\\s+/g, " ").trim()).get().filter(Boolean).slice(0, limit);
+  return $(selector).map((_, el) => $(el).text().replace(/\s+/g, " ").trim()).get().filter(Boolean).slice(0, limit);
 }
 function inspectPage($, page) {
   const interactions = [];
-  const add = (type, el, selector, extra = {}) => {
+  const add = (type, el, selector, extra = {}) => {\n    if (interactions.length >= 260) return;
     const $el = $(el);
-    const label = ($el.attr("aria-label") || $el.attr("title") || $el.text() || $el.attr("alt") || "").replace(/\\s+/g, " ").trim().slice(0, 160);
+    const label = ($el.attr("aria-label") || $el.attr("title") || $el.text() || $el.attr("alt") || "").replace(/\s+/g, " ").trim().slice(0, 160);
     interactions.push({
       type, label, selector,
       role: $el.attr("role") || null,
@@ -119,7 +119,7 @@ function inspectPage($, page) {
   $("[role=button],[role=tab],[role=menuitem],[role=dialog],[role=switch],[role=checkbox],[role=radio],[role=combobox],[tabindex]").each((_, el) => {
     if (interactions.length < 260) add("aria-interaction", el, el.name || el.tagName.toLowerCase());
   });
-  const cssText = $("style").map((_, el) => $(el).text()).get().join("\\n");
+  const cssText = $("style").map((_, el) => $(el).text()).get().join("\n");
   const styleAttributes = $("[style]").length;
   const headings = {};
   for (let level = 1; level <= 6; level++) headings["h" + level] = $("h" + level).length;
@@ -131,9 +131,9 @@ function inspectPage($, page) {
     hasPasswordInput: $(el).find('input[type="password"]').length > 0
   })).get().slice(0, 40);
   const navLabels = textOf($, "nav a, [role=navigation] a, header a", 80);
-  const colors = [...new Set((cssText.match(/(?:^|[;{\\s])(?:color|background(?:-color)?|border-color)\\s*:\\s*(#[0-9a-f]{3,8}|rgba?\\([^)]{1,80}\\)|hsla?\\([^)]{1,80}\\)|[a-z]{3,20})/gi) || []).map(x => x.replace(/^.*?:\\s*/, "").trim()).slice(0, 24)];
-  const fontFamilies = [...new Set([...cssText.matchAll(/font-family\\s*:\\s*([^;}]{1,120})/gi)].map(m => m[1].trim()))].slice(0, 12);
-  const cssVariables = [...new Set([...cssText.matchAll(/(--[a-z0-9_-]+)\\s*:/gi)].map(m => m[1]))].slice(0, 80);
+  const colors = [...new Set((cssText.match(/(?:^|[;{\s])(?:color|background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|hsla?\([^)]{1,80}\)|[a-z]{3,20})/gi) || []).map(x => x.replace(/^.*?:\s*/, "").trim()).slice(0, 24)];
+  const fontFamilies = [...new Set([...cssText.matchAll(/font-family\s*:\s*([^;}]{1,120})/gi)].map(m => m[1].trim()))].slice(0, 12);
+  const cssVariables = [...new Set([...cssText.matchAll(/(--[a-z0-9_-]+)\s*:/gi)].map(m => m[1]))].slice(0, 80);
   const images = $("img").map((_, el) => ({ src: $(el).attr("src") || $(el).attr("data-src") || null, alt: ($(el).attr("alt") || "").slice(0, 180), hasAlt: Boolean($(el).attr("alt")) })).get().slice(0, 120);
   const scripts = $("script[src]").map((_, el) => $(el).attr("src")).get().slice(0, 80);
   return {
@@ -145,7 +145,7 @@ function inspectPage($, page) {
     interactions: interactions.slice(0, 260),
     images,
     scripts,
-    visualSignals: { colors, fontFamilies, cssVariables, hasDarkColorSignals: /(?:#(?:0[0-9a-f]{5}|1[0-9a-f]{5}|2[0-9a-f]{5})|rgb\\(\\s*[0-4]?\\d\\s*,\\s*[0-4]?\\d\\s*,\\s*[0-4]?\\d)/i.test(cssText), hasResponsiveRules: /@media/i.test(cssText), hasAnimationRules: /@keyframes|animation\\s*:/i.test(cssText) }
+    visualSignals: { colors, fontFamilies, cssVariables, hasDarkColorSignals: /(?:#(?:0[0-9a-f]{5}|1[0-9a-f]{5}|2[0-9a-f]{5})|rgb\(\s*[0-4]?\d\s*,\s*[0-4]?\d\s*,\s*[0-4]?\d)/i.test(cssText), hasResponsiveRules: /@media/i.test(cssText), hasAnimationRules: /@keyframes|animation\s*:/i.test(cssText) }
   };
 }
 
