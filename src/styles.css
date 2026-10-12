@@ -15,6 +15,21 @@
   --silver: #c8d9cf;
   --danger: #ff9b9b;
 }
+
+/* FreePDF-inspired Slytherin emerald + silver: restrained glow, richer green. */
+:root {
+  --bg: #040706;
+  --panel: rgba(13, 23, 20, 0.92);
+  --panel-strong: #0d1714;
+  --line: rgba(213, 255, 238, 0.13);
+  --line-bright: rgba(117, 241, 193, 0.28);
+  --text: #ffffff;
+  --muted: #a9b6b2;
+  --green: #16c784;
+  --green-soft: #73e8ba;
+  --silver: #dce5e2;
+  --danger: #ff9b9b;
+}
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--bg); }
 body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); }
@@ -544,4 +559,54 @@ html,body{background:#050807!important}
   box-shadow:
     inset 0 1px 0 rgba(245,255,249,.10),
     0 26px 70px rgba(0,0,0,.30) !important;
+}
+
+/* Keep the FreePDF-style emerald atmosphere subtle rather than glossy/neon. */
+.app-shell {
+  background:
+    radial-gradient(ellipse at 50% -20%, rgba(16, 199, 132, .075), transparent 38%),
+    linear-gradient(180deg, #040706 0%, #06100d 48%, #040706 100%);
+}
+.ambient { filter: blur(90px); opacity: .10; }
+.ambient-one { background: #079966; }
+.ambient-two { background: #035f43; }
+.home-hero-glow { opacity: .12 !important; filter: blur(100px) !important; }
+.hero-eyebrow { border-color: rgba(115,232,186,.16); background: rgba(3,95,67,.12); color: #a6e9cb; }
+.hero-eyebrow svg, .hero-trust svg { color: #73e8ba; }
+.hero h1 > span { background: linear-gradient(105deg, #ffffff 0%, #73e8ba 48%, #dce5e2 100%); color: transparent; background-clip: text; -webkit-background-clip: text; }
+.home-primary-cta, .analyze-button, .reconstruction-button, .repo-import-button {
+  background: linear-gradient(135deg, #16a875, #08784f) !important;
+  border-color: rgba(115,232,186,.42) !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.18) !important;
+}
+.home-primary-cta:hover, .analyze-button:hover, .reconstruction-button:hover, .repo-import-button:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 25px rgba(0,0,0,.22) !important;
+}
+.home-feature-card, .url-card, .repo-import-card, .reconstruction-card, .workspace-panel {
+  box-shadow: 0 18px 55px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.025) !important;
+}
+.home-feature-card:hover { border-color: rgba(115,232,186,.22) !important; box-shadow: 0 20px 54px rgba(0,0,0,.25) !important; }
+.tool-switcher { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:30px 0 50px; }
+.tool-switcher a { display:inline-flex; align-items:center; gap:9px; padding:12px 15px; border:1px solid var(--line); border-radius:11px; background:rgba(13,23,20,.72); color:var(--silver); font-size:12px; font-weight:700; transition:border-color .18s, background .18s, color .18s; }
+.tool-switcher a:hover, .tool-switcher a.active { border-color:rgba(115,232,186,.3); background:rgba(3,95,67,.18); color:#d8fff0; }
+.top-nav { gap:20px; }
+.top-nav a { white-space:nowrap; }
+@media (max-width: 760px) {
+  .top-nav { gap:12px; }
+  .top-nav a { font-size:10px; }
+}
+
+.source-research-note { margin-top:22px; padding:20px 22px; border:1px solid var(--line); border-radius:14px; background:rgba(13,23,20,.62); }
+.source-research-note strong { color:#d8fff0; font-size:13px; }
+.source-research-note p { color:var(--muted); font-size:12px; line-height:1.8; margin:10px 0 0; }
+
+@media (max-width: 640px) {
+  .top-nav { gap: 9px !important; }
+  .top-nav a { font-size: 9px !important; }
+  .top-nav a:first-child, .top-nav a:nth-child(5) { display: none; }
+  .brand { gap: 6px; }
+  .brand-word { font-size: 16px; }
+  .brand-beta, .free-pill { display: none !important; }
+  .header-home-link { white-space: nowrap; }
 }
