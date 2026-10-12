@@ -91,7 +91,8 @@ function textOf($, selector, limit = 120) {
 }
 function inspectPage($, page) {
   const interactions = [];
-  const add = (type, el, selector, extra = {}) => {\n    if (interactions.length >= 260) return;
+  const add = (type, el, selector, extra = {}) => {
+    if (interactions.length >= 260) return;
     const $el = $(el);
     const label = ($el.attr("aria-label") || $el.attr("title") || $el.text() || $el.attr("alt") || "").replace(/\s+/g, " ").trim().slice(0, 160);
     interactions.push({
