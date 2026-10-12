@@ -2,7 +2,7 @@ import { load } from "cheerio";
 import JSZip from "jszip";
 import { publicUrl } from "./_lib/urlSafety.js";
 import { zipPath, relativeZipPath } from "./_lib/zipPaths.js";
-import { resourceUrls } from "./_lib/resourceDiscovery.js";
+import { resourceUrls, addUrl } from "./_lib/resourceDiscovery.js";
 import { fetchRemote } from "./_lib/fetchRemote.js";
 
 const MAX_FILES = 80;
