@@ -5,7 +5,6 @@ import HowItWorks from "./components/HowItWorks.jsx";
 import UrlAnalyzerForm from "./components/UrlAnalyzerForm.jsx";
 import WorkspacePanel from "./components/WorkspacePanel.jsx";
 import { useWebsiteWorkspace } from "./hooks/useWebsiteWorkspace.js";
-import "./styles/mobile.css";
 
 export default function App() {
   const workspace = useWebsiteWorkspace();
