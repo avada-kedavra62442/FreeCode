@@ -1,5 +1,7 @@
 import { publicUrl } from "./urlSafety.js";
 
+const MAX_FILE_BYTES = 2_500_000;
+
 export async function fetchRemote(start, signal) {
   let url = await publicUrl(start);
   for (let redirects = 0; redirects <= 4; redirects++) {
