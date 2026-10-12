@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
-import { load } from "cheerio";
+import { createHash ) from "node:crypto";
+import { load ) from "cheerio";
 import JSZip from "jszip";
 import { publicUrl } from "./_lib/urlSafety.js";
 import { fetchRemote } from "./_lib/fetchRemote.js";
@@ -233,7 +233,8 @@ export default async function handler(req, res) {
         const language = $("html").attr("lang") || "en";
         const inlineCss = $("style").map((_, el) => $(el).html() || "").get().join("\n\n");
         const route = new URL(finalUrl).pathname.replace(/\/+$/, "") || "/";
-        const page = { route, url: finalUrl, title, description, language, html: "", inlineCss, stylesheets: [], resources: [] };\n        page.inspection = inspectPage($, page);
+        const page = { route, url: finalUrl, title, description, language, html: "", inlineCss, stylesheets: [], resources: [] };
+        page.inspection = inspectPage($, page);
         page.resources = pageResources($, { url: finalUrl, inlineCss });
         const body = $("body").length ? $("body") : $.root();
         body.find("script,noscript,iframe,object,embed,portal,base").remove();
