@@ -86,31 +86,37 @@ function addUrl(queue, value, base, type, rootHost) {
 
 function resourceUrls($, pageUrl, rootHost) {
   const found = [];
-  $("script[src], img[src], source[src], video[poster], audio[src], iframe[src], input[type=image][src]").each((_, el) => {
-    const $el = $(el);
-    for (const attr of ["src", "poster"]) {
-      const val = $el.attr(attr);
-      if (val) addUrl(found, val, pageUrl, "asset", rootHost);
-    }
-  });
+  const add = (value, type = "asset") => {
+    if (value) addUrl(found, value, pageUrl, type, rootHost);
+  };
+
+  // Always prioritize application source and styles before image-heavy content.
+  $("script[src]").each((_, el) => add($(el).attr("src")));
   $("link[href]").each((_, el) => {
-    const rel = (($(el).attr("rel") || "").toLowerCase());
-    if (/stylesheet|icon|preload|manifest|apple-touch-icon|modulepreload|font/.test(rel)) {
-      const href = $(el).attr("href");
-      if (href) addUrl(found, href, pageUrl, "asset", rootHost);
-    }
+    const $el = $(el);
+    const rel = (($el.attr("rel") || "").toLowerCase());
+    const as = (($el.attr("as") || "").toLowerCase());
+    const href = $el.attr("href");
+    if (/stylesheet|icon|preload|manifest|apple-touch-icon|modulepreload|font|import/.test(rel) ||
+        ["style", "script", "font"].includes(as) ||
+        /\.(?:css|js|mjs|cjs)(?:[?#]|$)/i.test(href || "")) add(href);
   });
-  $("a[href]").each((_, el) => {
-    const href = $(el).attr("href");
-    if (href) addUrl(found, href, pageUrl, "page", rootHost);
+
+  // Common lazy-loading attributes are often the only source of image URLs.
+  $("img[src], source[src], video[src], video[poster], audio[src], iframe[src], input[type=image][src], img[data-src], img[data-lazy-src]").each((_, el) => {
+    const $el = $(el);
+    for (const attr of ["src", "poster", "data-src", "data-lazy-src"]) add($el.attr(attr));
   });
   $("img[srcset], source[srcset]").each((_, el) => {
     const srcset = $(el).attr("srcset") || "";
     for (const part of srcset.split(",")) {
       const candidate = part.trim().split(/\s+/)[0];
-      if (candidate) addUrl(found, candidate, pageUrl, "asset", rootHost);
+      if (candidate) add(candidate);
     }
   });
+
+  // HTML pages come after core assets, so they cannot crowd out CSS or JS.
+  $("a[href]").each((_, el) => add($(el).attr("href"), "page"));
   return found;
 }
 
