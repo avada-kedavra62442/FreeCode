@@ -596,3 +596,7 @@ html,body{background:#050807!important}
   .top-nav { gap:12px; }
   .top-nav a { font-size:10px; }
 }
+
+.source-research-note { margin-top:22px; padding:20px 22px; border:1px solid var(--line); border-radius:14px; background:rgba(13,23,20,.62); }
+.source-research-note strong { color:#d8fff0; font-size:13px; }
+.source-research-note p { color:var(--muted); font-size:12px; line-height:1.8; margin:10px 0 0; }
