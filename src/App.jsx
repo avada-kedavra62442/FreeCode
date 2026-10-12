@@ -76,7 +76,9 @@ function ToolPage({ mode }) {
       <p>{config.copy}</p>
       <div className="hero-trust"><span><ShieldCheck size={14} /> Free to use</span><span><Code2 size={14} /> Editable output</span><span><FolderTree size={14} /> Public sources only</span></div>
     </div>
-    <div className="workspace-route-content">{config.component}</div>
+    <div className="workspace-route-content">{config.component}
+      {mode === "traditional" && <aside className="source-research-note"><strong>What “View Page Source” actually gives you</strong><p>In Chrome, right-click the page and choose <em>View Page Source</em> to inspect the original HTML response. For separate CSS, JavaScript, images and fonts, open DevTools → Sources and inspect the public resources the browser loaded. Neither method reveals private server code or the entire original project automatically.</p><p>FreeCode fetches what is publicly accessible; it cannot recover files the server never exposes.</p></aside>}
+    </div>
     <div className="tool-switcher" aria-label="Choose another method">
       <a href="/traditional" className={mode === "traditional" ? "active" : ""}><Globe2 size={16}/> Traditional extraction</a>
       <a href="/github" className={mode === "github" ? "active" : ""}><Github size={16}/> GitHub repository</a>
@@ -86,7 +88,7 @@ function ToolPage({ mode }) {
 }
 
 export default function App() {
-  const path = window.location.pathname.replace(/\\/+$/, "") || "/";
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
   const mode = path === "/github" ? "github" : path === "/reconstruct" ? "reconstruct" : "traditional";
   const isTool = ["/traditional", "/github", "/reconstruct", "/workspace"].includes(path);
   return <div className="app-shell">
