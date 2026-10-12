@@ -513,3 +513,35 @@ html,body{background:#050807!important}
 }
 .site-footer:before{background:linear-gradient(90deg,transparent,rgba(224,237,230,.52),rgba(54,224,143,.44),rgba(224,237,230,.4),transparent)!important}
 @media(max-width:760px){.home-feature-card{min-height:0!important;padding:23px!important}}
+
+
+/* Restrained one-corner glass catchlight — matching FreePDF's latest treatment */
+.home-feature-card,
+.home-step-grid > article,
+.faq-grid > article {
+  border-color: rgba(190, 231, 207, .22) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(236, 255, 245, .08),
+    0 22px 65px rgba(0, 0, 0, .25) !important;
+}
+.home-feature-card::before,
+.home-step-grid > article::before,
+.faq-grid > article::before {
+  z-index: 0 !important;
+  background:
+    radial-gradient(ellipse 58% 72% at 0% 0%, rgba(223,255,237,.10), transparent 72%),
+    linear-gradient(135deg, rgba(255,255,255,.022), transparent 30%) !important;
+  box-shadow: inset 1px 1px 0 rgba(239,255,246,.13) !important;
+  opacity: 1 !important;
+}
+.home-feature-card::after {
+  display: none !important;
+}
+.home-feature-card:hover,
+.home-step-grid > article:hover,
+.faq-grid > article:hover {
+  border-color: rgba(190, 239, 211, .28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(245,255,249,.10),
+    0 26px 70px rgba(0,0,0,.30) !important;
+}
