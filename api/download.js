@@ -168,6 +168,17 @@ export default async function handler(req, res) {
     let totalBytes = 0;
 
     while (queue.length && downloaded.size < MAX_FILES && totalBytes < MAX_TOTAL_BYTES) {
+      queue.sort((a, b) => {
+        const priority = (item) => {
+          if (item.type === "page") return 1;
+          const path = new URL(item.url).pathname;
+          if (/\\.(?:css|js|mjs|cjs)(?:$)/i.test(path)) return 0;
+          if (/\\.(?:woff2?|ttf|otf|eot)(?:$)/i.test(path)) return 2;
+          if (/\\.(?:png|jpe?g|gif|webp|avif|svg|ico)(?:$)/i.test(path)) return 3;
+          return 2;
+        };
+        return priority(a) - priority(b);
+      });
       if (controller.signal.aborted) throw new Error("The site took too long to package. Try a smaller website.");
       const batch = [];
       while (queue.length && batch.length < 6 && downloaded.size + batch.length < MAX_FILES) {
@@ -243,6 +254,17 @@ export default async function handler(req, res) {
     const files = [...downloaded.values()];
     const urlToPath = new Map(files.map((file) => [file.url, file.path]));
     const zip = new JSZip();
+    const counts = { html: 0, css: 0, javascript: 0, images: 0, fonts: 0, other: 0 };
+    const categoryOf = (file) => {
+      const type = file.contentType || "";
+      const pathName = new URL(file.url).pathname;
+      if (type.includes("text/html") || file.type === "page" || /\\.html?$/i.test(file.path)) return "html";
+      if (type.includes("text/css") || /\\.css(?:$|\\?)/i.test(pathName) || /\\.css$/i.test(file.path)) return "css";
+      if (/javascript|ecmascript/.test(type) || /\\.(?:m?js|cjs)(?:$|\\?)/i.test(pathName) || /\\.(?:m?js|cjs)$/i.test(file.path)) return "javascript";
+      if (type.includes("image/") || /\\.(?:png|jpe?g|gif|webp|avif|svg|ico)$/i.test(pathName)) return "images";
+      if (/font|woff|ttf|otf/.test(type) || /\\.(?:woff2?|ttf|otf|eot)$/i.test(pathName)) return "fonts";
+      return "other";
+    };
 
     for (const file of files) {
       let content = file.buffer;
@@ -275,8 +297,19 @@ export default async function handler(req, res) {
         });
         content = Buffer.from(css, "utf8");
       }
+      counts[categoryOf(file)] += 1;
       zip.file(file.path, content);
     }
+
+    zip.file("FREECODE-MANIFEST.json", JSON.stringify({
+      generator: "FreeCode Website Exporter",
+      requestedUrl: start.href,
+      generatedAt: new Date().toISOString(),
+      counts,
+      sourceBytes: totalBytes,
+      files: files.map((file) => ({ path: file.path, category: categoryOf(file), bytes: file.buffer.byteLength })),
+      failedRequests: failures.slice(0, 100)
+    }, null, 2));
 
     zip.file("FREECODE-README.txt",
       "FreeCode website export\n\n" +
@@ -292,6 +325,10 @@ export default async function handler(req, res) {
     res.setHeader("Content-Disposition", 'attachment; filename="' + filename + '"');
     res.setHeader("Content-Length", String(archive.length));
     res.setHeader("X-FreeCode-Files", String(files.length));
+    res.setHeader("X-FreeCode-HTML", String(counts.html));
+    res.setHeader("X-FreeCode-CSS", String(counts.css));
+    res.setHeader("X-FreeCode-JS", String(counts.javascript));
+    res.setHeader("X-FreeCode-Images", String(counts.images));
     return res.status(200).send(archive);
   } catch (error) {
     const message = error?.name === "AbortError"
