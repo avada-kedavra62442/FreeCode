@@ -2,39 +2,38 @@
 
 **Turn Websites into Code at a Click.** Free, clean, and developer-friendly.
 
-FreeCode is an independent FreeToolz project built with React and Vite. It extracts accessible HTML and CSS into editable frontend starting points and can package publicly reachable pages and linked assets into a ZIP archive.
+FreeCode is an independent FreeToolz project built with React, Vite, and Vercel serverless functions. It extracts accessible HTML/CSS into editable frontend starting points and can bundle public pages and linked assets into a ZIP.
 
-## Stack
+## Project structure
 
-- React + Vite
-- Vercel serverless functions
-- Cheerio for HTML parsing
-- JSZip for website archives
-- HTML, CSS, React and Tailwind-oriented output modes
-- Emerald-and-silver dark interface
-
-## URL input
-
-Enter a domain such as `example.com` or a complete `https://example.com` URL. FreeCode adds HTTPS when no protocol is supplied.
+- `src/components/` — header, URL form, workspace editor, install instructions, process section, and footer
+- `src/hooks/` — workspace state and actions
+- `src/lib/` — code-format and preview helpers
+- `src/services/` — analysis requests and file downloads
+- `src/styles/` — mobile and install UI styles
+- `api/` — serverless analysis and website-export endpoints
 
 ## ZIP export
 
-After analyzing a website, choose **Download all files (.ZIP)**. The exporter follows links to pages on the same hostname and gathers reachable linked assets, including stylesheets, scripts, images, icons, and fonts where discovered. It preserves paths where possible and rewrites common HTML/CSS asset references for local use.
+The exporter prioritizes linked CSS and JavaScript, follows JavaScript module imports and CSS asset references where accessible, and then collects pages and images within free serverless limits. Every ZIP includes `FREECODE-MANIFEST.json` and `FREECODE-README.txt` listing included files and failed requests. The workspace reports file counts for HTML, CSS, JavaScript, and images.
 
-The public serverless export has safety and resource limits (up to 80 files, 1.2 MB per file, 12 MB total source data, and a short execution window). It is best-effort, not a guarantee that every file can be retrieved.
+The exporter is best-effort. It cannot recover private server-side source code, login-protected files, or content that only appears after client-side JavaScript executes. Some sites block automated downloads, and large sites may exceed the free execution or archive limits.
 
-## Limitations
+## Install FreeCode on Android and iPhone/iPad
 
-- Login-protected files, private repositories, server-side source code, blocked assets, and content generated only at runtime cannot be downloaded.
-- Some websites depend on APIs, cookies, service workers, dynamic JavaScript, or complex build systems; their ZIP may need manual adjustments.
-- External sites may block automated requests. Failed files are listed in `FREECODE-README.txt` inside the archive.
-- This project does not use a paid AI API and does not promise a pixel-perfect clone.
+FreeCode is configured as a Progressive Web App (PWA) and is served over HTTPS by Vercel.
+
+- **Android:** open FreeCode in Chrome or a supported browser and choose **Install app** or **Add to Home screen**. The in-app Install button uses the browser prompt when available.
+- **iPhone/iPad:** open FreeCode in Safari, tap **Share**, choose **Add to Home Screen**, then tap **Add**.
+
+The app shell can be cached for launch, but analysis and ZIP export require an internet connection. PWA installation is not the same as publishing a separate listing in Google Play or Apple's App Store; those would require a separate packaging and submission workflow.
 
 ## Local development
 
 ```bash
 npm install
 npm run dev
+npm run build
 ```
 
 ## Deploy
