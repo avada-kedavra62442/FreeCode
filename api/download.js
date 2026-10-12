@@ -246,6 +246,20 @@ export default async function handler(req, res) {
             if (match[2] && !match[2].startsWith("data:")) addUrl(queue, match[2], finalUrl, "asset", rootHost);
           }
           for (const match of cssText.matchAll(/@import\s+(?:url\()?\s*['"]([^'"]+)['"]/gi)) addUrl(queue, match[1], finalUrl, "asset", rootHost);
+        } else if (/javascript|ecmascript/.test(contentType) || /\.(?:m?js|cjs)(?:$|\?)/i.test(finalUrl.pathname)) {
+          const jsText = fetched.buffer.toString("utf8");
+          const patterns = [
+            /\bimport\s*(?:\([^)]*?\)|[^;]*?from\s*)?["']([^"']+)["']/g,
+            /\bexport\s+[^;]*?from\s*["']([^"']+)["']/g
+          ];
+          for (const importPattern of patterns) {
+            for (const match of jsText.matchAll(importPattern)) {
+              const ref = match[1];
+              if (ref && (ref.startsWith(".") || ref.startsWith("/") || /^https?:\/\//i.test(ref))) {
+                addUrl(queue, ref, finalUrl, "asset", rootHost);
+              }
+            }
+          }
         }
       }
     }
@@ -314,6 +328,7 @@ export default async function handler(req, res) {
     zip.file("FREECODE-README.txt",
       "FreeCode website export\n\n" +
       "Files included: " + files.length + "\n" +
+      "HTML: " + counts.html + "\nCSS: " + counts.css + "\nJavaScript: " + counts.javascript + "\nImages: " + counts.images + "\nFonts: " + counts.fonts + "\n" +
       "Downloaded bytes before ZIP compression: " + totalBytes + "\n" +
       "Some links, dynamic resources, login-protected files, server-side code, and JavaScript-generated content may not be available. This export is best-effort.\n" +
       (failures.length ? "\nFiles that could not be fetched: " + failures.length + "\n" + failures.slice(0, 100).join("\n") + "\n" : "")
