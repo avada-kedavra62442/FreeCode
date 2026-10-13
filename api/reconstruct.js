@@ -5,7 +5,7 @@ import { publicUrl } from "./_lib/urlSafety.js";
 import { fetchRemote } from "./_lib/fetchRemote.js";
 
 const PAGE_LIMIT = 18, HTML_LIMIT = 2000000, RESOURCE_LIMIT = 48;
-const RESOURCE_FILE_LIMIT = 380000, RESOURCE_TOTAL_LIMIT = 2000000, TIMEOUT = 12000;
+const RESOURCE_FILE_LIMIT = 380000, RESOURCE_TOTAL_LIMIT = 2000000, TIMEOUT = 25000;
 const SKIP_PATH = /(?:logout|signout|delete|unsubscribe|wp-admin|wp-login)/i;
 const PAGE_FILE_EXT = /\.(?:css|js|mjs|cjs|json|xml|txt|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|pdf|zip|mp4|webm|mp3|wav|map|wasm)$/i;
 
@@ -214,7 +214,7 @@ export default async function handler(req, res) {
 
   try {
     const start = await publicUrl(input), host = start.hostname;
-    const queue = [start.href, ...await getSitemap(start, host, controller.signal)];
+    const queue = [start.href];
     const seen = new Set(), pages = [], failedPages = [];
     let htmlBytes = 0;
     while (queue.length && pages.length < PAGE_LIMIT && htmlBytes < HTML_LIMIT) {
@@ -267,18 +267,42 @@ export default async function handler(req, res) {
       queued.add(absolute); resourceQueue.push({ url: absolute, kind: kind || kindOf(absolute) });
     }
     pages.forEach(p => p.resources.forEach(r => enqueue(r.url, r.kind)));
+    // Fetch small batches concurrently. Sequential downloads made the whole crawl
+    // time out on ordinary sites with many stylesheets, images, and fonts.
     while (resourceQueue.length && downloaded.size < RESOURCE_LIMIT && resourceBytes < RESOURCE_TOTAL_LIMIT) {
       if (controller.signal.aborted) break;
-      const item = resourceQueue.shift();
-      try {
-        const safe = await publicUrl(item.url), r = await fetchRemote(safe.href, controller.signal);
-        if (r.buffer.length > RESOURCE_FILE_LIMIT) { failedResources.push({ url: item.url, kind: item.kind, reason: "Per-file size limit" }); continue; }
-        if (resourceBytes + r.buffer.length > RESOURCE_TOTAL_LIMIT) { failedResources.push({ url: item.url, kind: item.kind, reason: "Total resource size limit" }); continue; }
+      const batch = resourceQueue.splice(0, Math.min(6, RESOURCE_LIMIT - downloaded.size));
+      const results = await Promise.all(batch.map(async (item) => {
+        try {
+          const safe = await publicUrl(item.url), r = await fetchRemote(safe.href, controller.signal);
+          return { item, resource: r };
+        } catch (error) {
+          return { item, error: error?.message || "Fetch failed" };
+        }
+      }));
+      for (const result of results) {
+        const { item } = result;
+        if (result.error) {
+          failedResources.push({ url: item.url, kind: item.kind, reason: result.error });
+          continue;
+        }
+        const r = result.resource;
+        if (r.buffer.length > RESOURCE_FILE_LIMIT) {
+          failedResources.push({ url: item.url, kind: item.kind, reason: "Per-file size limit" });
+          continue;
+        }
+        if (resourceBytes + r.buffer.length > RESOURCE_TOTAL_LIMIT) {
+          failedResources.push({ url: item.url, kind: item.kind, reason: "Total resource size limit" });
+          continue;
+        }
         const contentType = r.contentType || "", kind = /text\/css/i.test(contentType) ? "stylesheet" : item.kind;
         const record = { url: item.url, finalUrl: r.url.href, kind, contentType, bytes: r.buffer.length, path: resourcePath(item.url), buffer: r.buffer };
-        downloaded.set(item.url, record); resourceBytes += r.buffer.length;
-        if (kind === "stylesheet" || /\.css(?:$|\?)/i.test(item.url)) cssUrls(r.buffer.toString("utf8"), r.url.href).forEach(u => enqueue(u, kindOf(u)));
-      } catch (e) { failedResources.push({ url: item.url, kind: item.kind, reason: e?.message || "Fetch failed" }); }
+        downloaded.set(item.url, record);
+        resourceBytes += r.buffer.length;
+        if (kind === "stylesheet" || /\.css(?:$|\?)/i.test(item.url)) {
+          cssUrls(r.buffer.toString("utf8"), r.url.href).forEach(u => enqueue(u, kindOf(u)));
+        }
+      }
     }
     const localPaths = new Map([...downloaded].map(([url, r]) => [url, r.path]));
     for (const r of downloaded.values()) if (r.kind === "stylesheet" || /\.css(?:$|\?)/i.test(r.url)) r.buffer = Buffer.from(rewriteCss(r.buffer.toString("utf8"), r.finalUrl, localPaths));
