@@ -14,7 +14,7 @@ export default function ReconstructionPanel() {
     const contentType=response.headers.get("content-type")||"";
     let message="";
     if(contentType.includes("application/json")){const body=await response.json().catch(()=>({}));message=body.error||"";}
-    else {const body=await response.text().catch(()=>"");message=body.replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,240);}
+    else {const body=await response.text().catch(()=>"");message=body.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,240);}
     if(response.status===504||response.status===503) message="The reconstruction service timed out or is temporarily unavailable. Try a smaller site, or retry in a moment.";
     throw new Error(message||("Reconstruction failed (HTTP "+response.status+"). Check that the site is public and try again."));
    }
