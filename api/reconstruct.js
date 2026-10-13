@@ -215,6 +215,8 @@ export default async function handler(req, res) {
   try {
     const start = await publicUrl(input), host = start.hostname;
     const queue = [start.href];
+    // Discover sitemap routes in parallel with the first page fetch, not before it.
+    const sitemapPromise = getSitemap(start, host, controller.signal).catch(() => []);
     const seen = new Set(), pages = [], failedPages = [];
     let htmlBytes = 0;
     while (queue.length && pages.length < PAGE_LIMIT && htmlBytes < HTML_LIMIT) {
@@ -248,6 +250,10 @@ export default async function handler(req, res) {
         page.html = body.html() || "";
         page.stylesheets = page.resources.filter(r => r.kind === "stylesheet").map(r => r.url);
         pages.push(page);
+        if (pages.length === 1) {
+          const sitemapRoutes = await sitemapPromise;
+          for (const route of sitemapRoutes) if (!seen.has(route) && !queue.includes(route) && queue.length < 160) queue.push(route);
+        }
         $("a[href]").each((_, el) => {
           const value = $(el).attr("href");
           if (!value || /^(?:#|mailto:|tel:|javascript:|data:)/i.test(value)) return;
