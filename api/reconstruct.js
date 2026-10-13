@@ -17,12 +17,17 @@ function absoluteUrl(value, base) {
     return url.href;
   } catch { return null; }
 }
+function sameSiteHost(candidate, host) {
+  const a = String(candidate || "").toLowerCase().replace(/^www\./, "");
+  const b = String(host || "").toLowerCase().replace(/^www\./, "");
+  return Boolean(a && b && a === b);
+}
 function pageUrl(value, base, host) {
   const href = absoluteUrl(value, base);
   if (!href) return null;
   try {
     const url = new URL(href);
-    if (url.hostname.toLowerCase() !== host.toLowerCase() || SKIP_PATH.test(url.pathname) || PAGE_FILE_EXT.test(url.pathname)) return null;
+    if (!sameSiteHost(url.hostname, host) || SKIP_PATH.test(url.pathname) || PAGE_FILE_EXT.test(url.pathname)) return null;
     url.search = ""; url.hash = "";
     if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
     return url.href;
@@ -69,6 +74,17 @@ function rewriteCss(css, base, paths) {
   });
 }
 function normaliseAssets($, base) {
+  $("img[data-src],source[data-src],img[data-lazy-src],source[data-lazy-src],img[data-original],source[data-original]").each((_, el) => {
+    const current = $(el).attr("src") || "";
+    const lazy = $(el).attr("data-src") || $(el).attr("data-lazy-src") || $(el).attr("data-original");
+    if (lazy && (!current || /^data:image\/(?:gif|png|webp);base64,/i.test(current))) $(el).attr("src", lazy);
+  });
+  $("img[data-srcset],source[data-srcset],img[data-lazy-srcset],source[data-lazy-srcset]").each((_, el) => {
+    if (!$(el).attr("srcset")) {
+      const lazySet = $(el).attr("data-srcset") || $(el).attr("data-lazy-srcset");
+      if (lazySet) $(el).attr("srcset", lazySet);
+    }
+  });
   $("img[src],source[src],video[src],video[poster],audio[src],script[src],link[href]").each((_, el) => {
     for (const attr of ["src", "poster", "href"]) {
       const value = $(el).attr(attr);
@@ -132,7 +148,7 @@ function inspectPage($, page) {
     hasPasswordInput: $(el).find('input[type="password"]').length > 0
   })).get().slice(0, 40);
   const navLabels = textOf($, "nav a, [role=navigation] a, header a", 80);
-  const colors = [...new Set((cssText.match(/(?:^|[;{\s])(?:color|background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|hsla?\([^)]{1,80}\)|[a-z]{3,20})/gi) || []).map(x => x.replace(/^.*?:\s*/, "").trim()).slice(0, 24)];
+  const colors = [...new Set((cssText.match(/(?:^|[;{\s])(?:color|background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|hsla?\([^)]{1,80}\)|[a-z]{3,20})/gi) || []).map(x => x.replace(/^.*?:\s*/, "").trim()))].slice(0, 24);
   const fontFamilies = [...new Set([...cssText.matchAll(/font-family\s*:\s*([^;}]{1,120})/gi)].map(m => m[1].trim()))].slice(0, 12);
   const cssVariables = [...new Set([...cssText.matchAll(/(--[a-z0-9_-]+)\s*:/gi)].map(m => m[1]))].slice(0, 80);
   const images = $("img").map((_, el) => ({ src: $(el).attr("src") || $(el).attr("data-src") || null, alt: ($(el).attr("alt") || "").slice(0, 180), hasAlt: Boolean($(el).attr("alt")) })).get().slice(0, 120);
@@ -226,16 +242,25 @@ export default async function handler(req, res) {
       seen.add(candidate);
       try {
         const r = await fetchRemote((await publicUrl(candidate)).href, controller.signal);
-        if (!/text\/html|application\/xhtml\+xml/i.test(r.contentType)) continue;
+        const contentLooksHtml = /^\s*(?:<!doctype\s+html|<html\b|<head\b|<body\b)/i.test(r.buffer.toString("utf8", 0, Math.min(r.buffer.length, 2048)));
+        if (!/text\/html|application\/xhtml\+xml/i.test(r.contentType) && !contentLooksHtml) continue;
         if (htmlBytes + r.buffer.length > HTML_LIMIT) { failedPages.push({ url: candidate, reason: "HTML crawl size limit reached" }); break; }
         htmlBytes += r.buffer.length;
         const finalUrl = r.url.href, $ = load(r.buffer.toString("utf8"), { decodeEntities: false });
         const title = $("title").first().text().trim() || new URL(finalUrl).pathname || host;
         const description = $('meta[name="description"]').attr("content") || "";
         const language = $("html").attr("lang") || "en";
+        const safeAttrs = (el) => Object.fromEntries(Object.entries(el?.attribs || {}).filter(([name]) => !/^on/i.test(name) && name.toLowerCase() !== "srcdoc"));
+        const htmlAttrs = safeAttrs($("html").get(0));
+        const bodyAttrs = safeAttrs($("body").get(0));
+        const headMeta = $("head meta").map((_, el) => {
+          const attrs = el.attribs || {};
+          if ((!attrs.name && !attrs.property) || !attrs.content || /^viewport$/i.test(attrs.name || "")) return null;
+          return { name: attrs.name || null, property: attrs.property || null, content: attrs.content };
+        }).get().filter(Boolean).slice(0, 40);
         const inlineCss = $("style").map((_, el) => $(el).html() || "").get().join("\n\n");
         const route = new URL(finalUrl).pathname.replace(/\/+$/, "") || "/";
-        const page = { route, url: finalUrl, title, description, language, html: "", inlineCss, stylesheets: [], resources: [] };
+        const page = { route, url: finalUrl, title, description, language, htmlAttrs, bodyAttrs, headMeta, html: "", inlineCss, stylesheets: [], resources: [] };
         page.inspection = inspectPage($, page);
         page.resources = pageResources($, { url: finalUrl, inlineCss });
         const body = $("body").length ? $("body") : $.root();
@@ -273,41 +298,27 @@ export default async function handler(req, res) {
       queued.add(absolute); resourceQueue.push({ url: absolute, kind: kind || kindOf(absolute) });
     }
     pages.forEach(p => p.resources.forEach(r => enqueue(r.url, r.kind)));
-    // Fetch small batches concurrently. Sequential downloads made the whole crawl
-    // time out on ordinary sites with many stylesheets, images, and fonts.
     while (resourceQueue.length && downloaded.size < RESOURCE_LIMIT && resourceBytes < RESOURCE_TOTAL_LIMIT) {
       if (controller.signal.aborted) break;
-      const batch = resourceQueue.splice(0, Math.min(6, RESOURCE_LIMIT - downloaded.size));
+      const batch = resourceQueue.splice(0, 4);
       const results = await Promise.all(batch.map(async (item) => {
         try {
-          const safe = await publicUrl(item.url), r = await fetchRemote(safe.href, controller.signal);
-          return { item, resource: r };
+          const safe = await publicUrl(item.url);
+          const r = await fetchRemote(safe.href, controller.signal);
+          return { item, r };
         } catch (error) {
-          return { item, error: error?.message || "Fetch failed" };
+          return { item, error };
         }
       }));
       for (const result of results) {
-        const { item } = result;
-        if (result.error) {
-          failedResources.push({ url: item.url, kind: item.kind, reason: result.error });
-          continue;
-        }
-        const r = result.resource;
-        if (r.buffer.length > RESOURCE_FILE_LIMIT) {
-          failedResources.push({ url: item.url, kind: item.kind, reason: "Per-file size limit" });
-          continue;
-        }
-        if (resourceBytes + r.buffer.length > RESOURCE_TOTAL_LIMIT) {
-          failedResources.push({ url: item.url, kind: item.kind, reason: "Total resource size limit" });
-          continue;
-        }
+        const { item, r, error } = result;
+        if (error) { failedResources.push({ url: item.url, kind: item.kind, reason: error?.message || "Fetch failed" }); continue; }
+        if (r.buffer.length > RESOURCE_FILE_LIMIT) { failedResources.push({ url: item.url, kind: item.kind, reason: "Per-file size limit" }); continue; }
+        if (resourceBytes + r.buffer.length > RESOURCE_TOTAL_LIMIT) { failedResources.push({ url: item.url, kind: item.kind, reason: "Total resource size limit" }); continue; }
         const contentType = r.contentType || "", kind = /text\/css/i.test(contentType) ? "stylesheet" : item.kind;
         const record = { url: item.url, finalUrl: r.url.href, kind, contentType, bytes: r.buffer.length, path: resourcePath(item.url), buffer: r.buffer };
-        downloaded.set(item.url, record);
-        resourceBytes += r.buffer.length;
-        if (kind === "stylesheet" || /\.css(?:$|\?)/i.test(item.url)) {
-          cssUrls(r.buffer.toString("utf8"), r.url.href).forEach(u => enqueue(u, kindOf(u)));
-        }
+        downloaded.set(item.url, record); resourceBytes += r.buffer.length;
+        if (kind === "stylesheet" || /\.css(?:$|\?)/i.test(item.url)) cssUrls(r.buffer.toString("utf8"), r.url.href).forEach(u => enqueue(u, kindOf(u)));
       }
     }
     const localPaths = new Map([...downloaded].map(([url, r]) => [url, r.path]));
@@ -321,7 +332,7 @@ export default async function handler(req, res) {
     for (const page of pages) {
       const linkedCss = page.stylesheets.map(url => downloaded.get(url)).filter(resource => resource && (resource.kind === "stylesheet" || /text\/css/i.test(resource.contentType))).map(resource => resource.buffer.toString("utf8")).join("\n");
       const combinedCss = [page.inlineCss, linkedCss].filter(Boolean).join("\n");
-      const colorDeclarations = [...new Set([...combinedCss.matchAll(/(?:^|[;{\s])(?:color|background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|hsla?\([^)]{1,80}\)|[a-z]{3,20})/gi)].map(match => match[1])).slice(0, 32);
+      const colorDeclarations = [...new Set([...combinedCss.matchAll(/(?:^|[;{\s])(?:color|background(?:-color)?|border-color)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]{1,80}\)|hsla?\([^)]{1,80}\)|[a-z]{3,20})/gi)].map(match => match[1]))].slice(0, 32);
       const fontFamilies = [...new Set([...combinedCss.matchAll(/font-family\s*:\s*([^;}]{1,120})/gi)].map(match => match[1].trim()))].slice(0, 16);
       const cssVariables = [...new Set([...combinedCss.matchAll(/(--[a-z0-9_-]+)\s*:/gi)].map(match => match[1]))].slice(0, 100);
       page.inspection.stylesheetAnalysis = {
@@ -344,19 +355,27 @@ export default async function handler(req, res) {
         if (!value || /^(?:#|mailto:|tel:|javascript:|data:)/i.test(value)) return;
         try {
           const target = new URL(value, page.url);
-          if (target.hostname.toLowerCase() !== host.toLowerCase()) return;
+          if (!sameSiteHost(target.hostname, host)) return;
           const route = target.pathname.replace(/\/+$/, "") || "/";
-          if (routes.has(route)) $(el).attr("href", target.pathname + target.search + target.hash);
+          if (routes.has(route)) {
+            $(el).attr("href", target.pathname + target.search + target.hash);
+            $(el).removeAttr("target");
+          } else {
+            $(el).attr("href", target.href).attr("target", "_blank").attr("rel", "noopener noreferrer");
+          }
         } catch {}
       });
-      $("form[action]").each((_, el) => {
-        try { if (new URL($(el).attr("action"), page.url).hostname.toLowerCase() === host.toLowerCase()) $(el).attr("action", "#"); } catch { $(el).attr("action", "#"); }
+      $("form").each((_, el) => {
+        $(el).attr("action", "#").attr("data-freecode-form", "backend-unavailable");
       });
-      const stylesheets = page.stylesheets.map(u => localPaths.get(u)).filter(Boolean).map(p => "/" + p.replace(/^public\//, ""));
-      return { route: page.route, url: page.url, title: page.title, description: page.description, language: page.language, html: $("div").first().html() || "", inlineCss: rewriteCss(page.inlineCss, page.url, localPaths), stylesheets };
+      const stylesheets = page.stylesheets.map(u => localPaths.get(u)).filter(Boolean).map(p => "/" + p.slice("public/".length));
+      const htmlAttrs = { ...(page.htmlAttrs || {}) }, bodyAttrs = { ...(page.bodyAttrs || {}) };
+      if (htmlAttrs.style) htmlAttrs.style = rewriteCss(htmlAttrs.style, page.url, localPaths);
+      if (bodyAttrs.style) bodyAttrs.style = rewriteCss(bodyAttrs.style, page.url, localPaths);
+      return { route: page.route, url: page.url, title: page.title, description: page.description, language: page.language, htmlAttrs, bodyAttrs, headMeta: page.headMeta, html: $("div").first().html() || "", inlineCss: rewriteCss(page.inlineCss, page.url, localPaths), stylesheets };
     });
     const report = {
-      version: 3, source: start.href, createdAt: new Date().toISOString(),
+      version: 5, source: start.href, createdAt: new Date().toISOString(),
       summary: { pagesCaptured: pages.length, pageLimit: PAGE_LIMIT, htmlBytes, resourcesDiscovered: queued.size, resourcesDownloaded: downloaded.size, resourceBytes, resourceLimit: RESOURCE_LIMIT, resourceBytesLimit: RESOURCE_TOTAL_LIMIT, failedPages: failedPages.length, failedResources: failedResources.length },
       pages: pages.map(p => ({ route: p.route, title: p.title, url: p.url, inspection: p.inspection, resources: p.resources.map(r => ({ url: r.url, kind: r.kind, downloaded: localPaths.has(r.url), localPath: localPaths.get(r.url) || null })) })),
       interactionAnalysis: { totalLinks: pages.reduce((n, p) => n + p.inspection.counts.links, 0), totalButtons: pages.reduce((n, p) => n + p.inspection.counts.buttons, 0), totalForms: pages.reduce((n, p) => n + p.inspection.counts.forms, 0), totalFormControls: pages.reduce((n, p) => n + p.inspection.counts.formControls, 0), pagesWithForms: pages.filter(p => p.inspection.counts.forms > 0).map(p => p.route), pagesWithVideo: pages.filter(p => p.inspection.counts.videos > 0).map(p => p.route), pagesWithIframe: pages.filter(p => p.inspection.counts.iframes > 0).map(p => p.route) },
@@ -368,7 +387,8 @@ export default async function handler(req, res) {
         "Server-side code, databases, API secrets, and private application behaviour cannot be recovered from public pages.",
         "The crawl is bounded by page, file-count, per-file, total-resource, and execution-time limits.",
         "Some sites block automated requests or require browser execution; inspect this report for missing resources.",
-        "Interaction analysis is inferred from retrieved HTML and static CSS. It cannot observe runtime-only state, browser event listeners, API responses, or interactions that require login."
+        "Interaction analysis is inferred from retrieved HTML and static CSS. It cannot observe runtime-only state, browser event listeners, API responses, or interactions that require login.",
+        "Form submissions are intercepted in the export because the original site server or API cannot be recovered from public page files."
       ]
     };
 
@@ -377,10 +397,34 @@ export default async function handler(req, res) {
     zip.file("index.html", '<!doctype html>\n<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Reconstructed website</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>');
     zip.file("src/main.jsx", 'import React from "react";\nimport { createRoot } from "react-dom/client";\nimport { Analytics } from "@vercel/analytics/react";\nimport App from "./App.jsx";\nimport "./styles.css";\ncreateRoot(document.getElementById("root")).render(<><App /><Analytics /></>);\n');
     zip.file("src/pages.js", "export const pages = " + JSON.stringify(projectPages).replace(/</g, "\\u003c") + ";\n");
-    zip.file("src/App.jsx", 'import { useEffect, useMemo, useState } from "react";\nimport { pages } from "./pages.js";\nfunction currentPath(){try{return decodeURI(window.location.pathname).replace(/\\/+$/, "")||"/"}catch{return window.location.pathname||"/"}}\nexport default function App(){\n const [path,setPath]=useState(currentPath);\n const page=useMemo(()=>pages.find(p=>p.route===path)||pages.find(p=>p.route==="/")||pages[0],[path]);\n useEffect(()=>{const pop=()=>setPath(currentPath());const click=e=>{const a=e.target.closest("a[href]");if(!a||e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||a.target||a.hasAttribute("download"))return;try{const u=new URL(a.href,location.href),route=u.pathname.replace(/\\/+$/, "")||"/";if(u.origin!==location.origin||!pages.some(p=>p.route===route))return;e.preventDefault();history.pushState({},"",u.pathname+u.search+u.hash);setPath(currentPath());scrollTo(0,0)}catch{}};addEventListener("popstate",pop);document.addEventListener("click",click);return()=>{removeEventListener("popstate",pop);document.removeEventListener("click",click)}},[]);\n useEffect(()=>{document.title=page?.title||"Reconstructed website";document.documentElement.lang=page?.language||"en";document.querySelectorAll("[data-reconstruction-css]").forEach(n=>n.remove());page?.stylesheets?.forEach(href=>{const l=document.createElement("link");l.rel="stylesheet";l.href=href;l.dataset.reconstructionCss="true";document.head.appendChild(l)});return()=>document.querySelectorAll("[data-reconstruction-css]").forEach(n=>n.remove())},[page]);\n return page?<><style>{page.inlineCss||""}</style><div className="reconstructed-page" dangerouslySetInnerHTML={{__html:page.html}}/></>:<h1>Page not found</h1>;\n}\n');
-    zip.file("src/styles.css", "*{box-sizing:border-box}html{min-height:100%;scroll-behavior:smooth}body{margin:0;min-width:320px}img,video,iframe{max-width:100%}.reconstructed-page{min-height:100vh}.reconstructed-page img{height:auto}.reconstructed-page a{cursor:pointer}");
+    zip.file("src/App.jsx", [
+      'import { useEffect, useMemo, useRef, useState } from "react";',
+      'import { pages } from "./pages.js";',
+      'function currentPath(){return window.location.pathname.replace(/\\/+$/, "")||"/"}',
+      'function attrsOf(node){return Object.fromEntries([...node.attributes].map(a=>[a.name,a.value]))}',
+      'function applyAttrs(node,base,next){[...node.attributes].forEach(a=>node.removeAttribute(a.name));Object.entries(base||{}).forEach(([k,v])=>node.setAttribute(k,v));Object.entries(next||{}).forEach(([k,v])=>node.setAttribute(k,v))}',
+      'export default function App(){',
+      ' const [path,setPath]=useState(currentPath);',
+      ' const page=useMemo(()=>pages.find(p=>p.route===path)||pages.find(p=>p.route==="/")||pages[0],[path]);',
+      ' const baseHtml=useRef(null),baseBody=useRef(null);',
+      ' if(!baseHtml.current)baseHtml.current=attrsOf(document.documentElement);',
+      ' if(!baseBody.current)baseBody.current=attrsOf(document.body);',
+      " useEffect(()=>{const pop=()=>setPath(currentPath());const click=e=>{const control=e.target.closest(\"[aria-controls]\");if(control){const id=(control.getAttribute(\"aria-controls\")||\"\").split(/\\s+/)[0],panel=id&&document.getElementById(id);if(panel){if(control.getAttribute(\"role\")===\"tab\"){const list=control.closest('[role=\"tablist\"]');if(list)list.querySelectorAll('[role=\"tab\"][aria-controls]').forEach(tab=>{tab.setAttribute(\"aria-selected\",String(tab===control));tab.tabIndex=tab===control?0:-1});const group=panel.parentElement;if(group)group.querySelectorAll('[role=\"tabpanel\"]').forEach(item=>{item.hidden=item!==panel});panel.hidden=false}else{const wasOpen=control.getAttribute(\"aria-expanded\")===\"true\";control.setAttribute(\"aria-expanded\",String(!wasOpen));panel.hidden=wasOpen}}}const a=e.target.closest(\"a[href]\");if(!a||e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||a.target||a.hasAttribute(\"download\"))return;try{const u=new URL(a.href,location.href),route=u.pathname.replace(/\\/+$/,\"\")||\"/\";if(u.origin!==location.origin||!pages.some(p=>p.route===route))return;e.preventDefault();history.pushState({},\"\",u.pathname+u.search+u.hash);setPath(currentPath());scrollTo(0,0)}catch{}};const submit=e=>{const form=e.target.closest(\".reconstructed-page form\");if(!form)return;e.preventDefault();let note=form.querySelector(\"[data-freecode-form-note]\");if(!note){note=document.createElement(\"p\");note.dataset.freecodeFormNote=\"true\";note.setAttribute(\"role\",\"status\");note.className=\"freecode-form-note\";form.appendChild(note)}note.textContent=\"This form needs the original site server or API, which cannot be recovered from public page files.\"};addEventListener(\"popstate\",pop);document.addEventListener(\"click\",click);document.addEventListener(\"submit\",submit);return()=>{removeEventListener(\"popstate\",pop);document.removeEventListener(\"click\",click);document.removeEventListener(\"submit\",submit)}},[]);",
+      ' useEffect(()=>{',
+      '  document.title=page?.title||"Reconstructed website";',
+      '  applyAttrs(document.documentElement,baseHtml.current,{...(page?.htmlAttrs||{}),lang:page?.htmlAttrs?.lang||page?.language||"en"});',
+      '  applyAttrs(document.body,baseBody.current,page?.bodyAttrs||{});',
+      '  document.querySelectorAll("[data-reconstruction-css],[data-reconstruction-meta]").forEach(n=>n.remove());',
+      '  page?.headMeta?.forEach(meta=>{if(!meta.content||(!meta.name&&!meta.property))return;const node=document.createElement("meta");if(meta.name)node.name=meta.name;if(meta.property)node.setAttribute("property",meta.property);node.content=meta.content;node.dataset.reconstructionMeta="true";document.head.appendChild(node)});',
+      '  page?.stylesheets?.forEach(href=>{const node=document.createElement("link");node.rel="stylesheet";node.href=href;node.dataset.reconstructionCss="true";document.head.appendChild(node)});',
+      '  return()=>{document.querySelectorAll("[data-reconstruction-css],[data-reconstruction-meta]").forEach(n=>n.remove());applyAttrs(document.documentElement,baseHtml.current,baseHtml.current);applyAttrs(document.body,baseBody.current,baseBody.current)};',
+      ' },[page]);',
+      ' return page?<><style>{page.inlineCss||""}</style><div className="reconstructed-page" dangerouslySetInnerHTML={{__html:page.html}}/></>:<h1>Page not found</h1>;',
+      '}'
+    ].join("\n"));
+    zip.file("src/styles.css", "*{box-sizing:border-box}html{min-height:100%;scroll-behavior:smooth}body{margin:0;min-width:320px}img,video,iframe{max-width:100%}.reconstructed-page{min-height:100vh}.reconstructed-page img{height:auto}.reconstructed-page a{cursor:pointer}.freecode-form-note{margin:.75rem 0 0;padding:.7rem .8rem;border:1px solid currentColor;border-radius:.5rem;font-size:.9rem;line-height:1.45}");
     zip.file("freecode-reconstruction-report.json", JSON.stringify(report, null, 2));
-    zip.file("README.md", "# FreeCode reconstructed website\n\nGenerated from publicly accessible website resources.\n\n## Run\n\n1. Install Node.js.\n2. Run npm install.\n3. Run npm run dev.\n\n## Included\n\n- Captured page HTML and route metadata\n- Downloaded public stylesheets, images, fonts, icons, and media where accessible\n- Public JavaScript files saved separately under original-resources/ for inspection; they are not executed by this reconstruction\n- freecode-reconstruction-report.json (version 3) with route/resource inventory, page structure, linked-CSS design signals, form/button/link inventory, navigation clues, accessibility hints, and failed fetches\n\n## Limitations\n\nThis is a best-effort reconstruction, not a recovery of private source code or backend services. Review the report for inaccessible resources and routes that need manual rebuilding.");
+    zip.file("README.md", "# FreeCode reconstructed website\n\nGenerated from publicly accessible website resources.\n\n## Run\n\n1. Install Node.js.\n2. Run npm install.\n3. Run npm run dev.\n\n## Included\n\n- Captured page HTML and route metadata\n- Downloaded public stylesheets, images, fonts, icons, and media where accessible\n- Public JavaScript files saved separately under original-resources/ for inspection; they are not executed by this reconstruction\n- freecode-reconstruction-report.json (version 5) with route/resource inventory, page structure, linked-CSS design signals, form/button/link inventory, navigation clues, accessibility hints, and failed fetches\n\n## Limitations\n\nThis is a best-effort reconstruction, not a recovery of private source code or backend services. Form submissions are intercepted and explained rather than sent to the original site. Review the report for inaccessible resources and routes that need manual rebuilding.");
     const archive = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", 'attachment; filename="' + host.replace(/[^a-z0-9.-]/gi, "-") + '-freecode-reconstruction.zip"');
@@ -388,6 +432,8 @@ export default async function handler(req, res) {
     res.setHeader("X-FreeCode-Stylesheets", String([...downloaded.values()].filter(r => r.kind === "stylesheet").length));
     res.setHeader("X-FreeCode-Assets", String(downloaded.size));
     res.setHeader("X-FreeCode-Failures", String(failedPages.length + failedResources.length));
+    res.setHeader("X-FreeCode-Failed-Pages", String(failedPages.length));
+    res.setHeader("X-FreeCode-Failed-Resources", String(failedResources.length));
     res.setHeader("X-FreeCode-Links", String(report.interactionAnalysis.totalLinks));
     res.setHeader("X-FreeCode-Buttons", String(report.interactionAnalysis.totalButtons));
     res.setHeader("X-FreeCode-Forms", String(report.interactionAnalysis.totalForms));
