@@ -5,7 +5,7 @@ import { publicUrl } from "./_lib/urlSafety.js";
 import { fetchRemote } from "./_lib/fetchRemote.js";
 
 const PAGE_LIMIT = 18, HTML_LIMIT = 2000000, RESOURCE_LIMIT = 48;
-const RESOURCE_FILE_LIMIT = 380000, RESOURCE_TOTAL_LIMIT = 2000000, TIMEOUT = 25000;
+const RESOURCE_FILE_LIMIT = 380000, RESOURCE_TOTAL_LIMIT = 2000000, TIMEOUT = 42000;
 const SKIP_PATH = /(?:logout|signout|delete|unsubscribe|wp-admin|wp-login)/i;
 const PAGE_FILE_EXT = /\.(?:css|js|mjs|cjs|json|xml|txt|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|pdf|zip|mp4|webm|mp3|wav|map|wasm)$/i;
 
@@ -439,6 +439,7 @@ export default async function handler(req, res) {
     res.setHeader("X-FreeCode-Forms", String(report.interactionAnalysis.totalForms));
     return res.status(200).send(archive);
   } catch (error) {
-    return res.status(502).json({ error: controller.signal.aborted ? "The website took too long to explore. Try a smaller site." : (error?.message || "FreeCode could not reconstruct this website.") });
+    console.error("[FreeCode Recon] Reconstruction failed:", error?.stack || error?.message || error);
+    return res.status(502).json({ error: controller.signal.aborted ? "Recon reached its 42-second safety limit. Try a smaller or simpler public website." : (error?.message || "FreeCode could not reconstruct this website.") });
   } finally { clearTimeout(timer); }
 }

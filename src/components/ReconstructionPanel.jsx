@@ -10,7 +10,13 @@ export default function ReconstructionPanel() {
   setBusy(true);
   try {
    const response=await fetch("/api/reconstruct",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:normalized.href})});
-   if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||"Could not reconstruct this website.");}
+   if(!response.ok){
+    const rawBody=await response.text();
+    let message="";
+    try{const body=JSON.parse(rawBody);message=body.error||body.message||"";}catch{}
+    if(!message&&rawBody)message=rawBody.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,240);
+    throw new Error(message||`Recon API returned HTTP ${response.status}. Check the deployment logs and try again.`);
+   }
    const blob=await response.blob(); if(!blob.size||!/application\/zip/i.test(blob.type)) throw new Error("The server did not return a valid React project ZIP.");
    const details={pages:Number(response.headers.get("X-FreeCode-Pages")||0),stylesheets:Number(response.headers.get("X-FreeCode-Stylesheets")||0),assets:Number(response.headers.get("X-FreeCode-Assets")||0),failures:Number(response.headers.get("X-FreeCode-Failures")||0),failedPages:Number(response.headers.get("X-FreeCode-Failed-Pages")||0),failedResources:Number(response.headers.get("X-FreeCode-Failed-Resources")||0),links:Number(response.headers.get("X-FreeCode-Links")||0),buttons:Number(response.headers.get("X-FreeCode-Buttons")||0),forms:Number(response.headers.get("X-FreeCode-Forms")||0)};
    saveBlob(blob,normalized.hostname.replace(/[^a-z0-9.-]/gi,"-")+"-reconstructed-react.zip");setReport(details);
