@@ -10,7 +10,14 @@ export default function ReconstructionPanel() {
   setBusy(true);
   try {
    const response=await fetch("/api/reconstruct",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:normalized.href})});
-   if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||"Could not reconstruct this website.");}
+   if(!response.ok){
+    const contentType=response.headers.get("content-type")||"";
+    let message="";
+    if(contentType.includes("application/json")){const body=await response.json().catch(()=>({}));message=body.error||"";}
+    else {const body=await response.text().catch(()=>"");message=body.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,240);}
+    if(response.status===504||response.status===503) message="The reconstruction service timed out or is temporarily unavailable. Try a smaller site, or retry in a moment.";
+    throw new Error(message||("Reconstruction failed (HTTP "+response.status+"). Check that the site is public and try again."));
+   }
    const blob=await response.blob(); if(!blob.size||!/application\/zip/i.test(blob.type)) throw new Error("The server did not return a valid React project ZIP.");
    const details={pages:Number(response.headers.get("X-FreeCode-Pages")||0),stylesheets:Number(response.headers.get("X-FreeCode-Stylesheets")||0),assets:Number(response.headers.get("X-FreeCode-Assets")||0),failures:Number(response.headers.get("X-FreeCode-Failures")||0),links:Number(response.headers.get("X-FreeCode-Links")||0),buttons:Number(response.headers.get("X-FreeCode-Buttons")||0),forms:Number(response.headers.get("X-FreeCode-Forms")||0)};
    saveBlob(blob,normalized.hostname.replace(/[^a-z0-9.-]/gi,"-")+"-reconstructed-react.zip");setReport(details);

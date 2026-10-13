@@ -4,5 +4,10 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/reconstruct.js": {
+      "maxDuration": 30
+    }
+  }
 }
