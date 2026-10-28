@@ -634,3 +634,21 @@ dialog[open], [role="dialog"], [role="listbox"], [role="menu"]{isolation:isolate
 
 /* Bring custom pickers, popovers, menus, and modal layers above cards and sticky chrome. */
 .MuiPopover-root,.MuiPopper-root,.MuiPickersPopper-root,.MuiModal-root,.ant-picker-dropdown,.ant-select-dropdown,.ant-dropdown,.ant-popover,.ant-tooltip,.ant-modal-root,.select__menu,.tippy-box,.flatpickr-calendar.open,.react-datepicker-popper,.datepicker-dropdown,.calendar-popup,.calendar-picker,.calendar-overlay,.date-picker-popup,.dropdown-content,.dropdown-panel,.popover-content,.modal-backdrop,.modal-dialog,[data-radix-popper-content-wrapper],[data-floating-ui-portal],[data-state="open"][role="dialog"],[data-state="open"][role="listbox"]{z-index:2147483000!important}
+
+
+/* Responsive baseline: iOS/iPadOS and foldable displays */
+html { min-width:320px; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body { min-width:320px; overflow-x:clip; padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }
+button,a,input,select,textarea { touch-action:manipulation; max-width:100%; }
+img,canvas,svg,video { max-width:100%; }
+:focus-visible { outline:2px solid var(--accent,#69d7a4); outline-offset:3px; }
+@media(max-width:700px) {
+  input,select,textarea { font-size:16px; }
+  button,[role="button"],input,select { min-height:42px; }
+  .modal,[role="dialog"] { max-width:calc(100vw - 24px); max-height:calc(100dvh - 24px); overflow:auto; }
+}
+@media(max-width:420px) { h1 { overflow-wrap:anywhere; } }
+@media(orientation:landscape) and (max-height:520px) { .modal,[role="dialog"] { max-height:88dvh; overflow-y:auto; } }
+@media(prefers-reduced-motion:reduce) {
+ *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
